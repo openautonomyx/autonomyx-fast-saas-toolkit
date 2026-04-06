@@ -1,0 +1,105 @@
+{
+  "_description": "Uptime Kuma monitor templates. Used by the Claude skill's Configure mode to set up health monitoring for all services.",
+  "monitors": [
+    {
+      "name": "App",
+      "type": "http",
+      "url": "https://app.${DOMAIN}",
+      "interval": 60,
+      "retries": 3,
+      "accepted_statuscodes": ["200-299"],
+      "group": "core"
+    },
+    {
+      "name": "Auth (Logto)",
+      "type": "http",
+      "url": "https://auth.${DOMAIN}/api/status",
+      "interval": 60,
+      "retries": 3,
+      "accepted_statuscodes": ["200-299"],
+      "group": "core"
+    },
+    {
+      "name": "Billing API (Lago)",
+      "type": "http",
+      "url": "https://billing-api.${DOMAIN}/health",
+      "interval": 120,
+      "retries": 3,
+      "accepted_statuscodes": ["200-299"],
+      "group": "core"
+    },
+    {
+      "name": "Storage (RustFS)",
+      "type": "http",
+      "url": "https://storage.${DOMAIN}/minio/health/live",
+      "interval": 120,
+      "retries": 3,
+      "accepted_statuscodes": ["200-299"],
+      "group": "core"
+    },
+    {
+      "name": "PostgreSQL",
+      "type": "port",
+      "hostname": "postgres",
+      "port": 5432,
+      "interval": 60,
+      "retries": 3,
+      "group": "infrastructure"
+    },
+    {
+      "name": "Redis",
+      "type": "port",
+      "hostname": "redis",
+      "port": 6379,
+      "interval": 60,
+      "retries": 3,
+      "group": "infrastructure"
+    },
+    {
+      "name": "Error Tracking (GlitchTip)",
+      "type": "http",
+      "url": "https://errors.${DOMAIN}/_health/",
+      "interval": 120,
+      "retries": 3,
+      "accepted_statuscodes": ["200-299"],
+      "group": "ops"
+    },
+    {
+      "name": "Monitoring (Grafana)",
+      "type": "http",
+      "url": "https://monitor.${DOMAIN}/api/health",
+      "interval": 120,
+      "retries": 3,
+      "accepted_statuscodes": ["200-299"],
+      "group": "ops"
+    },
+    {
+      "name": "Workflows (n8n)",
+      "type": "http",
+      "url": "https://auto.${DOMAIN}/healthz",
+      "interval": 120,
+      "retries": 3,
+      "accepted_statuscodes": ["200-299"],
+      "group": "growth"
+    },
+    {
+      "name": "Admin (NocoDB)",
+      "type": "http",
+      "url": "https://admin.${DOMAIN}/api/v1/health",
+      "interval": 120,
+      "retries": 3,
+      "accepted_statuscodes": ["200-299"],
+      "group": "growth"
+    }
+  ],
+  "status_page": {
+    "title": "Service Status",
+    "slug": "status",
+    "description": "Real-time status of all services",
+    "groups": [
+      { "name": "Core Services", "monitors": ["App", "Auth (Logto)", "Billing API (Lago)", "Storage (RustFS)"] },
+      { "name": "Infrastructure", "monitors": ["PostgreSQL", "Redis"] },
+      { "name": "Operations", "monitors": ["Error Tracking (GlitchTip)", "Monitoring (Grafana)"] }
+    ]
+  }
+}

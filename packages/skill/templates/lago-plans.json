@@ -1,0 +1,107 @@
+{
+  "_description": "Lago billing plan templates for the Autonomyx Fast SaaS Toolkit. Used by the Claude skill's Configure mode to programmatically create pricing plans via the Lago MCP server.",
+  "billable_metric": {
+    "name": "API Calls",
+    "code": "api_calls",
+    "description": "Number of API requests made by a tenant",
+    "aggregation_type": "sum_agg",
+    "field_name": "count",
+    "recurring": false
+  },
+  "plans": [
+    {
+      "name": "Free",
+      "code": "free",
+      "interval": "monthly",
+      "amount_cents": 0,
+      "amount_currency": "USD",
+      "trial_period": 0,
+      "pay_in_advance": false,
+      "charges": [
+        {
+          "billable_metric_code": "api_calls",
+          "charge_model": "graduated",
+          "properties": {
+            "graduated_ranges": [
+              { "from_value": 0, "to_value": 1000, "per_unit_amount": "0", "flat_amount": "0" },
+              { "from_value": 1001, "to_value": null, "per_unit_amount": "0.001", "flat_amount": "0" }
+            ]
+          }
+        }
+      ],
+      "metadata": {
+        "storage_mb": 100,
+        "team_members": 1,
+        "features": "core"
+      }
+    },
+    {
+      "name": "Starter",
+      "code": "starter",
+      "interval": "monthly",
+      "amount_cents": 2900,
+      "amount_currency": "USD",
+      "trial_period": 14,
+      "pay_in_advance": true,
+      "charges": [
+        {
+          "billable_metric_code": "api_calls",
+          "charge_model": "graduated",
+          "properties": {
+            "graduated_ranges": [
+              { "from_value": 0, "to_value": 10000, "per_unit_amount": "0", "flat_amount": "0" },
+              { "from_value": 10001, "to_value": null, "per_unit_amount": "0.0005", "flat_amount": "0" }
+            ]
+          }
+        }
+      ],
+      "metadata": {
+        "storage_mb": 1000,
+        "team_members": 5,
+        "features": "core,advanced_analytics,api_access"
+      }
+    },
+    {
+      "name": "Pro",
+      "code": "pro",
+      "interval": "monthly",
+      "amount_cents": 9900,
+      "amount_currency": "USD",
+      "trial_period": 14,
+      "pay_in_advance": true,
+      "charges": [
+        {
+          "billable_metric_code": "api_calls",
+          "charge_model": "graduated",
+          "properties": {
+            "graduated_ranges": [
+              { "from_value": 0, "to_value": 100000, "per_unit_amount": "0", "flat_amount": "0" },
+              { "from_value": 100001, "to_value": null, "per_unit_amount": "0.0002", "flat_amount": "0" }
+            ]
+          }
+        }
+      ],
+      "metadata": {
+        "storage_mb": 10000,
+        "team_members": 25,
+        "features": "core,advanced_analytics,api_access,priority_support,custom_domain,sso,audit_log"
+      }
+    },
+    {
+      "name": "Enterprise",
+      "code": "enterprise",
+      "interval": "monthly",
+      "amount_cents": 0,
+      "amount_currency": "USD",
+      "trial_period": 0,
+      "pay_in_advance": false,
+      "charges": [],
+      "metadata": {
+        "storage_mb": -1,
+        "team_members": -1,
+        "features": "all",
+        "note": "Custom pricing — configure manually per customer"
+      }
+    }
+  ]
+}

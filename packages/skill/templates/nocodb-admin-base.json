@@ -1,0 +1,94 @@
+{
+  "_description": "NocoDB admin base template. Used by the Claude skill's Configure mode to set up an admin dashboard via the NocoDB MCP server.",
+  "base": {
+    "title": "SaaS Admin",
+    "description": "Admin dashboard for managing tenants, users, and usage"
+  },
+  "tables": [
+    {
+      "name": "tenants",
+      "source": "postgres",
+      "views": [
+        {
+          "name": "All Tenants",
+          "type": "grid",
+          "sort": [{ "field": "created_at", "direction": "desc" }]
+        },
+        {
+          "name": "By Plan",
+          "type": "kanban",
+          "group_by": "plan",
+          "columns": ["free", "starter", "pro", "enterprise"]
+        },
+        {
+          "name": "Active vs Inactive",
+          "type": "kanban",
+          "group_by": "status",
+          "columns": ["active", "trial", "suspended", "cancelled"]
+        }
+      ]
+    },
+    {
+      "name": "users",
+      "source": "postgres",
+      "views": [
+        {
+          "name": "User Directory",
+          "type": "grid",
+          "sort": [{ "field": "created_at", "direction": "desc" }]
+        },
+        {
+          "name": "Recent Signups",
+          "type": "grid",
+          "filter": { "field": "created_at", "op": "gte", "value": "7_days_ago" },
+          "sort": [{ "field": "created_at", "direction": "desc" }]
+        }
+      ]
+    },
+    {
+      "name": "tenant_memberships",
+      "source": "postgres",
+      "views": [
+        {
+          "name": "All Memberships",
+          "type": "grid"
+        },
+        {
+          "name": "By Role",
+          "type": "kanban",
+          "group_by": "role",
+          "columns": ["owner", "admin", "member", "viewer"]
+        }
+      ]
+    },
+    {
+      "name": "api_keys",
+      "source": "postgres",
+      "views": [
+        {
+          "name": "Active Keys",
+          "type": "grid",
+          "filter": { "field": "revoked_at", "op": "is_null" },
+          "sort": [{ "field": "last_used_at", "direction": "desc" }]
+        }
+      ]
+    },
+    {
+      "name": "usage_events",
+      "source": "postgres",
+      "views": [
+        {
+          "name": "Recent Activity",
+          "type": "grid",
+          "sort": [{ "field": "timestamp", "direction": "desc" }],
+          "limit": 1000
+        },
+        {
+          "name": "Activity Calendar",
+          "type": "calendar",
+          "date_field": "timestamp"
+        }
+      ]
+    }
+  ]
+}
