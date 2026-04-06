@@ -263,7 +263,15 @@ function buildHealthCheck(mod: ModuleDefinition) {
       test = ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"];
       break;
     default:
-      test = ["CMD-SHELL", `curl -f http://localhost:${hc.port}${hc.path} || exit 1`];
+      if (mod.id === "logto") {
+        // Logto image has wget but not curl
+        test = ["CMD-SHELL", `wget -q --spider http://localhost:${hc.port}${hc.path} || exit 1`];
+      } else if (mod.id === "rustfs") {
+        // RustFS returns 403 without auth — accept as alive
+        test = ["CMD-SHELL", `curl -s -o /dev/null -w '%{http_code}' http://localhost:${hc.port}/ | grep -qE '^(200|403)' || exit 1`];
+      } else {
+        test = ["CMD-SHELL", `curl -f http://localhost:${hc.port}${hc.path} || exit 1`];
+      }
   }
 
   return { test, interval, timeout: "5s", retries: 5 };

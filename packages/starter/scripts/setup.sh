@@ -44,5 +44,16 @@ for db in "${DATABASES[@]}"; do
   fi
 done
 
+# Seed Logto database on first run
+echo ""
+echo "🔑 Initializing Logto auth database..."
+if docker compose exec -T postgres psql -U "$POSTGRES_USER" -d logto -c "SELECT 1 FROM _logto_config LIMIT 1;" >/dev/null 2>&1; then
+  echo "  ✓ Logto (already seeded)"
+else
+  echo "  ⏳ Running Logto seed (first-time only, may take 30s)..."
+  docker compose run --rm --entrypoint sh logto -c "npx @logto/cli db seed --swe && npx @logto/cli db alteration deploy" 2>&1 | grep -E "^(info|fatal)" || true
+  echo "  ✓ Logto seed complete"
+fi
+
 echo ""
 echo "✅ Setup complete! Run 'make up' to start services."

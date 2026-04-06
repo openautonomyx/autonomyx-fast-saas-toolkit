@@ -125,8 +125,8 @@ const logto: ModuleDefinition = {
   image: "svhd/logto:latest",
   ports: { app: 3001, admin: 3002 },
   envVars: [
-    { key: "LOGTO_PORT", description: "App port", default: "3001" },
-    { key: "LOGTO_ADMIN_PORT", description: "Admin port", default: "3002" },
+    { key: "LOGTO_PORT", description: "App port", default: "3301" },
+    { key: "LOGTO_ADMIN_PORT", description: "Admin port", default: "3302" },
   ],
   healthCheck: { path: "/api/status", port: 3001 },
   pgDatabase: "logto",
