@@ -1,0 +1,55 @@
+# Development overrides — automatically loaded by Docker Compose
+# This file exposes internal service ports for local debugging
+# DO NOT use in production
+
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  logto:
+    ports:
+      - "3001:3001"
+      - "3002:3002"
+
+  lago-api:
+    ports:
+      - "3000:3000"
+
+  rustfs:
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  glitchtip:
+    ports:
+      - "8000:8000"
+
+  uptime-kuma:
+    ports:
+      - "3001:3001"
+
+  grafana:
+    ports:
+      - "3000:3000"
+
+  prometheus:
+    ports:
+      - "9090:9090"
+
+  n8n:
+    ports:
+      - "5678:5678"
+
+  nocodb:
+    ports:
+      - "8080:8080"
+
+  # Caddy in dev mode serves on localhost without HTTPS
+  caddy:
+    environment:
+      DOMAIN: localhost

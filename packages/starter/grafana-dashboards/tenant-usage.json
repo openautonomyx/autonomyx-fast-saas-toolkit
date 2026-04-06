@@ -1,0 +1,89 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "title": "API Calls by Tenant (24h)",
+      "type": "bargauge",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "topk(10, sum by (tenant_id) (increase(saas_api_requests_total[24h])))",
+          "legendFormat": "{{tenant_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 8000 },
+              { "color": "red", "value": 10000 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Tenants Near Usage Limit",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "datasource": "Loki",
+          "expr": "{job=\"saas-middleware\"} |= \"usage_warning\"",
+          "legendFormat": ""
+        }
+      ]
+    },
+    {
+      "title": "API Latency by Tenant (p95)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "histogram_quantile(0.95, sum by (tenant_id, le) (rate(saas_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{tenant_id}} p95"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s" }
+      }
+    },
+    {
+      "title": "Storage Usage by Tenant",
+      "type": "bargauge",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "saas_storage_bytes_total / 1024 / 1024",
+          "legendFormat": "{{tenant_id}} (MB)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "decmbytes" }
+      }
+    },
+    {
+      "title": "Active Users by Tenant (24h)",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "sum by (tenant_id) (saas_active_users_total)",
+          "legendFormat": "{{tenant_id}}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["saas", "tenants", "usage"],
+  "time": { "from": "now-24h", "to": "now" },
+  "title": "Tenant Usage",
+  "uid": "tenant-usage"
+}

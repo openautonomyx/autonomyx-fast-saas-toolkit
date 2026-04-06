@@ -1,0 +1,109 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "title": "Monthly Recurring Revenue (MRR)",
+      "type": "stat",
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "lago_mrr_cents / 100",
+          "legendFormat": "MRR"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "currencyUSD", "thresholds": { "steps": [{ "color": "green", "value": null }] } }
+      }
+    },
+    {
+      "title": "Active Subscriptions",
+      "type": "stat",
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "lago_subscriptions_active_total",
+          "legendFormat": "Active"
+        }
+      ]
+    },
+    {
+      "title": "Churned This Month",
+      "type": "stat",
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "increase(lago_subscriptions_cancelled_total[30d])",
+          "legendFormat": "Churned"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 5 }] } }
+      }
+    },
+    {
+      "title": "Trial → Paid Conversion",
+      "type": "stat",
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "lago_conversions_total / lago_trials_total * 100",
+          "legendFormat": "Rate"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "percent" }
+      }
+    },
+    {
+      "title": "Revenue by Plan",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "sum by (plan) (lago_subscription_revenue_cents) / 100",
+          "legendFormat": "{{plan}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "currencyUSD" }
+      }
+    },
+    {
+      "title": "Usage Events (Rate)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "sum by (event_type) (rate(lago_usage_events_total[5m]))",
+          "legendFormat": "{{event_type}}"
+        }
+      ]
+    },
+    {
+      "title": "Invoices Pending Payment",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 13 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "lago_invoices_pending_total",
+          "format": "table",
+          "legendFormat": "{{tenant_id}}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["saas", "billing", "lago"],
+  "time": { "from": "now-30d", "to": "now" },
+  "title": "Billing Overview",
+  "uid": "billing-overview"
+}

@@ -1,0 +1,89 @@
+groups:
+  - name: saas-service-health
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.job }} is down"
+          description: "{{ $labels.job }} has been unreachable for more than 2 minutes."
+
+      - alert: HighErrorRate
+        expr: rate(saas_api_errors_total[5m]) / rate(saas_api_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate ({{ $value | humanizePercentage }})"
+          description: "API error rate is above 5% for more than 5 minutes."
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, sum by (le) (rate(saas_request_duration_seconds_bucket[5m]))) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p95 latency ({{ $value | humanizeDuration }})"
+          description: "API p95 latency is above 2 seconds."
+
+  - name: saas-infrastructure
+    rules:
+      - alert: HighCPU
+        expr: rate(container_cpu_usage_seconds_total[5m]) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.name }} CPU usage > 80%"
+
+      - alert: HighMemory
+        expr: container_memory_usage_bytes / container_spec_memory_limit_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.name }} memory usage > 85%"
+
+      - alert: DiskSpacelow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 15
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space below 15%"
+
+      - alert: PostgresConnectionsHigh
+        expr: pg_stat_activity_count > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL connections above 80"
+
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis memory usage > 80%"
+
+  - name: saas-billing
+    rules:
+      - alert: TenantOverUsageLimit
+        expr: saas_tenant_usage_ratio > 0.9
+        for: 1h
+        labels:
+          severity: info
+        annotations:
+          summary: "Tenant {{ $labels.tenant_id }} at 90%+ of usage limit"
+
+      - alert: BillingWebhookFailure
+        expr: increase(lago_webhook_failures_total[1h]) > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Lago webhook failures detected"

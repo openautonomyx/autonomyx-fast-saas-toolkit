@@ -2,7 +2,11 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+rule_files:
+  - /etc/prometheus/alert-rules.yml
+
 scrape_configs:
+  # ── Essential ────────────────────────────────
   - job_name: "prometheus"
     static_configs:
       - targets: ["localhost:9090"]
@@ -10,18 +14,86 @@ scrape_configs:
   - job_name: "caddy"
     static_configs:
       - targets: ["caddy:2019"]
+    metrics_path: /metrics
 
-  - job_name: "postgres"
+  # ── Core ─────────────────────────────────────
+  - job_name: "logto"
     static_configs:
-      - targets: ["postgres:5432"]
-    # Requires postgres_exporter sidecar — add if needed
+      - targets: ["logto:3001"]
+    metrics_path: /api/status
+    scrape_interval: 30s
 
-  - job_name: "redis"
+  - job_name: "lago-api"
     static_configs:
-      - targets: ["redis:6379"]
-    # Requires redis_exporter sidecar — add if needed
+      - targets: ["lago-api:3000"]
+    metrics_path: /health
+    scrape_interval: 30s
 
-  - job_name: "node-app"
+  - job_name: "rustfs"
     static_configs:
-      - targets: []
-    # Add your application's /metrics endpoint here
+      - targets: ["rustfs:9000"]
+    metrics_path: /minio/v2/metrics/cluster
+
+  # ── Ops ──────────────────────────────────────
+  - job_name: "glitchtip"
+    static_configs:
+      - targets: ["glitchtip:8000"]
+    metrics_path: /_health/
+    scrape_interval: 30s
+
+  - job_name: "uptime-kuma"
+    static_configs:
+      - targets: ["uptime-kuma:3001"]
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  - job_name: "loki"
+    static_configs:
+      - targets: ["loki:3100"]
+    metrics_path: /metrics
+
+  - job_name: "grafana"
+    static_configs:
+      - targets: ["grafana:3000"]
+    metrics_path: /metrics
+
+  # ── Growth (only scraped when running) ──────
+  - job_name: "matomo"
+    static_configs:
+      - targets: ["matomo:80"]
+    metrics_path: /
+    scrape_interval: 60s
+    honor_labels: true
+
+  - job_name: "n8n"
+    static_configs:
+      - targets: ["n8n:5678"]
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  - job_name: "nocodb"
+    static_configs:
+      - targets: ["nocodb:8080"]
+    metrics_path: /api/v1/health
+    scrape_interval: 30s
+
+  - job_name: "mautic"
+    static_configs:
+      - targets: ["mautic:80"]
+    metrics_path: /s/login
+    scrape_interval: 60s
+
+  # ── Your Application ────────────────────────
+  # - job_name: "app"
+  #   static_configs:
+  #     - targets: ["your-app:PORT"]
+  #   metrics_path: /metrics
+
+  # ── Docker/Host metrics (optional) ──────────
+  # Uncomment and add cAdvisor + node-exporter to docker-compose
+  # - job_name: "cadvisor"
+  #   static_configs:
+  #     - targets: ["cadvisor:8080"]
+  # - job_name: "node-exporter"
+  #   static_configs:
+  #     - targets: ["node-exporter:9100"]

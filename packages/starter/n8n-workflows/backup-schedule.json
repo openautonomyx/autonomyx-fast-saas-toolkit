@@ -1,0 +1,67 @@
+{
+  "name": "Daily Database Backup",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 3 * * *" }] }
+      },
+      "name": "Daily at 3am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "command": "cd /project && ./scripts/backup.sh 2>&1",
+        "cwd": "/project"
+      },
+      "name": "Run Backup",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [{ "value1": "={{ $json.exitCode }}", "operation": "notEqual", "value2": 0 }]
+        }
+      },
+      "name": "Check Result",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.ADMIN_EMAIL }}",
+        "toEmail": "={{ $env.ADMIN_EMAIL }}",
+        "subject": "[Alert] Database backup failed",
+        "text": "The daily database backup failed at {{ $now.toISO() }}.\n\nError output:\n{{ $json.stderr }}\n\nPlease check the backup script and database connectivity."
+      },
+      "name": "Alert on Failure",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [950, 250]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.ADMIN_EMAIL }}",
+        "toEmail": "={{ $env.ADMIN_EMAIL }}",
+        "subject": "[OK] Database backup completed",
+        "text": "Daily backup completed successfully at {{ $now.toISO() }}.\n\nOutput:\n{{ $json.stdout }}"
+      },
+      "name": "Confirm Success",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [950, 400]
+    }
+  ],
+  "connections": {
+    "Daily at 3am": { "main": [[{ "node": "Run Backup", "type": "main", "index": 0 }]] },
+    "Run Backup": { "main": [[{ "node": "Check Result", "type": "main", "index": 0 }]] },
+    "Check Result": { "main": [[{ "node": "Alert on Failure", "type": "main", "index": 0 }], [{ "node": "Confirm Success", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "saas-toolkit" }, { "name": "ops" }]
+}

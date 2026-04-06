@@ -1,0 +1,86 @@
+{
+  "name": "Tenant Onboarding Flow (3-day drip)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "onboarding-start",
+        "responseMode": "responseNode"
+      },
+      "name": "Onboarding Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.ADMIN_EMAIL }}",
+        "toEmail": "={{ $json.body.email }}",
+        "subject": "Day 1: Getting started with {{ $json.body.tenant_name }}",
+        "text": "Hi {{ $json.body.user_name }},\n\nWelcome to {{ $json.body.tenant_name }}! Here's your day 1 guide:\n\n1. Complete your profile at https://app.{{ $env.DOMAIN }}/settings\n2. Invite your first team member\n3. Explore the API docs at https://docs.{{ $env.DOMAIN }}\n\nNeed help? Just reply to this email.\n\nBest,\nThe Team"
+      },
+      "name": "Day 1 Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": { "amount": 1, "unit": "days" },
+      "name": "Wait 1 Day",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.ADMIN_EMAIL }}",
+        "toEmail": "={{ $json.body.email }}",
+        "subject": "Day 2: Power features in {{ $json.body.tenant_name }}",
+        "text": "Hi {{ $json.body.user_name }},\n\nHere are 3 power features you should try today:\n\n1. Set up your first webhook integration\n2. Create an API key for programmatic access\n3. Customize your workspace settings\n\nDashboard: https://app.{{ $env.DOMAIN }}/dashboard\n\nBest,\nThe Team"
+      },
+      "name": "Day 2 Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": { "amount": 1, "unit": "days" },
+      "name": "Wait 1 More Day",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1100, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.ADMIN_EMAIL }}",
+        "toEmail": "={{ $json.body.email }}",
+        "subject": "Day 3: Ready to upgrade {{ $json.body.tenant_name }}?",
+        "text": "Hi {{ $json.body.user_name }},\n\nYou've been using {{ $json.body.tenant_name }} for 3 days now! Here's what upgrading unlocks:\n\n- Starter plan: 10x API limits, team collaboration\n- Pro plan: SSO, audit logs, custom domains\n- Enterprise: Unlimited everything + priority support\n\nUpgrade: https://billing.{{ $env.DOMAIN }}\n\nHappy building!\nThe Team"
+      },
+      "name": "Day 3 Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, flow: 'onboarding-3day' }) }}"
+      },
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [500, 450]
+    }
+  ],
+  "connections": {
+    "Onboarding Trigger": { "main": [[{ "node": "Day 1 Email", "type": "main", "index": 0 }, { "node": "Respond", "type": "main", "index": 0 }]] },
+    "Day 1 Email": { "main": [[{ "node": "Wait 1 Day", "type": "main", "index": 0 }]] },
+    "Wait 1 Day": { "main": [[{ "node": "Day 2 Email", "type": "main", "index": 0 }]] },
+    "Day 2 Email": { "main": [[{ "node": "Wait 1 More Day", "type": "main", "index": 0 }]] },
+    "Wait 1 More Day": { "main": [[{ "node": "Day 3 Email", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "saas-toolkit" }, { "name": "growth" }]
+}

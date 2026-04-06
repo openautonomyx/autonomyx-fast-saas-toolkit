@@ -1,0 +1,84 @@
+{
+  "name": "Lago Billing Event Sync",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lago-webhook",
+        "responseMode": "responseNode"
+      },
+      "name": "Lago Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            { "value1": "={{ $json.body.webhook_type }}", "operation": "equal", "value2": "invoice.created" },
+            { "value1": "={{ $json.body.webhook_type }}", "operation": "equal", "value2": "subscription.terminated" },
+            { "value1": "={{ $json.body.webhook_type }}", "operation": "equal", "value2": "customer.payment_overdue" }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "name": "Filter Events",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const event = $input.first().json.body;\nconst type = event.webhook_type;\n\nlet action, details;\n\nswitch (type) {\n  case 'invoice.created':\n    action = 'Invoice Created';\n    details = `Amount: $${(event.invoice.total_amount_cents / 100).toFixed(2)} for ${event.invoice.customer.name}`;\n    break;\n  case 'subscription.terminated':\n    action = 'Subscription Cancelled';\n    details = `${event.subscription.customer.name} cancelled their ${event.subscription.plan_code} plan`;\n    break;\n  case 'customer.payment_overdue':\n    action = 'Payment Overdue';\n    details = `${event.customer.name} has overdue payment`;\n    break;\n  default:\n    action = type;\n    details = JSON.stringify(event).slice(0, 200);\n}\n\nreturn [{ json: { action, details, type, timestamp: new Date().toISOString() } }];"
+      },
+      "name": "Format Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 250]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO usage_events (tenant_id, event_type, properties) VALUES ('system', 'billing_event', $1::jsonb)",
+        "options": { "queryParams": "={{ JSON.stringify({ action: $json.action, details: $json.details, type: $json.type }) }}" }
+      },
+      "name": "Log to DB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [950, 250],
+      "credentials": { "postgres": { "name": "SaaS DB" } }
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.ADMIN_EMAIL }}",
+        "toEmail": "={{ $env.ADMIN_EMAIL }}",
+        "subject": "[Billing] {{ $json.action }}",
+        "text": "{{ $json.details }}\n\nTimestamp: {{ $json.timestamp }}\nEvent type: {{ $json.type }}"
+      },
+      "name": "Notify Admin",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [950, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ received: true }) }}"
+      },
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1200, 300]
+    }
+  ],
+  "connections": {
+    "Lago Webhook": { "main": [[{ "node": "Filter Events", "type": "main", "index": 0 }]] },
+    "Filter Events": { "main": [[{ "node": "Format Event", "type": "main", "index": 0 }], [{ "node": "Respond OK", "type": "main", "index": 0 }]] },
+    "Format Event": { "main": [[{ "node": "Log to DB", "type": "main", "index": 0 }, { "node": "Notify Admin", "type": "main", "index": 0 }]] },
+    "Log to DB": { "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "saas-toolkit" }, { "name": "billing" }]
+}
