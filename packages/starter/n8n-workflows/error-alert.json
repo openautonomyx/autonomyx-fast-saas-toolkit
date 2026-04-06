@@ -1,0 +1,46 @@
+{
+  "name": "GlitchTip Error Alert to Slack/Email",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "glitchtip-alert",
+        "responseMode": "lastNode"
+      },
+      "name": "GlitchTip Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [{ "value1": "={{ $json.body.event_count }}", "operation": "largerEqual", "value2": 5 }]
+        }
+      },
+      "name": "Threshold Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.ADMIN_EMAIL }}",
+        "toEmail": "={{ $env.ADMIN_EMAIL }}",
+        "subject": "[Error] {{ $json.body.title }} ({{ $json.body.event_count }}x)",
+        "text": "Error: {{ $json.body.title }}\nOccurrences: {{ $json.body.event_count }}\nProject: {{ $json.body.project }}\nFirst seen: {{ $json.body.first_seen }}\n\nView in GlitchTip: https://errors.{{ $env.DOMAIN }}"
+      },
+      "name": "Email Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [750, 250]
+    }
+  ],
+  "connections": {
+    "GlitchTip Webhook": { "main": [[{ "node": "Threshold Check", "type": "main", "index": 0 }]] },
+    "Threshold Check": { "main": [[{ "node": "Email Alert", "type": "main", "index": 0 }], []] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "saas-toolkit" }]
+}

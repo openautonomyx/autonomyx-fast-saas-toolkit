@@ -1,0 +1,45 @@
+{
+  "name": "Welcome Email on Tenant Signup",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tenant-signup",
+        "responseMode": "responseNode"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.ADMIN_EMAIL }}",
+        "toEmail": "={{ $json.body.email }}",
+        "subject": "Welcome to {{ $json.body.tenant_name }}!",
+        "text": "Hi {{ $json.body.user_name }},\n\nWelcome! Your workspace \"{{ $json.body.tenant_name }}\" is ready.\n\nHere's how to get started:\n1. Log in at https://app.{{ $env.DOMAIN }}\n2. Invite your team\n3. Explore the dashboard\n\nNeed help? Reply to this email.\n\nBest,\nThe Team"
+      },
+      "name": "Send Welcome Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true }) }}"
+      },
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [750, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Send Welcome Email", "type": "main", "index": 0 }]] },
+    "Send Welcome Email": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "saas-toolkit" }]
+}

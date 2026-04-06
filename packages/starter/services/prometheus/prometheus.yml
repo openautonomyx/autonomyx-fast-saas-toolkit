@@ -1,0 +1,27 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "caddy"
+    static_configs:
+      - targets: ["caddy:2019"]
+
+  - job_name: "postgres"
+    static_configs:
+      - targets: ["postgres:5432"]
+    # Requires postgres_exporter sidecar — add if needed
+
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis:6379"]
+    # Requires redis_exporter sidecar — add if needed
+
+  - job_name: "node-app"
+    static_configs:
+      - targets: []
+    # Add your application's /metrics endpoint here

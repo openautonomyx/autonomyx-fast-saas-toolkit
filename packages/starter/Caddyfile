@@ -1,0 +1,75 @@
+# Autonomyx Fast SaaS Toolkit — Caddy Reverse Proxy
+# All subdomains get automatic HTTPS via ACME
+# Replace {$DOMAIN} with your domain or set it in .env
+
+# ── Core ──────────────────────────────────────
+
+auth.{$DOMAIN} {
+	reverse_proxy logto:3001
+}
+
+auth-admin.{$DOMAIN} {
+	reverse_proxy logto:3002
+}
+
+billing.{$DOMAIN} {
+	reverse_proxy lago-front:80
+}
+
+billing-api.{$DOMAIN} {
+	reverse_proxy lago-api:3000
+}
+
+storage.{$DOMAIN} {
+	reverse_proxy rustfs:9000
+}
+
+storage-console.{$DOMAIN} {
+	reverse_proxy rustfs:9001
+}
+
+# ── Ops ───────────────────────────────────────
+
+monitor.{$DOMAIN} {
+	reverse_proxy grafana:3000
+}
+
+errors.{$DOMAIN} {
+	reverse_proxy glitchtip:8000
+}
+
+status.{$DOMAIN} {
+	reverse_proxy uptime-kuma:3001
+}
+
+# ── Growth ────────────────────────────────────
+
+analytics.{$DOMAIN} {
+	reverse_proxy matomo:80
+}
+
+email.{$DOMAIN} {
+	reverse_proxy mautic:80
+}
+
+admin.{$DOMAIN} {
+	reverse_proxy nocodb:8080
+}
+
+auto.{$DOMAIN} {
+	reverse_proxy n8n:5678
+}
+
+tools.{$DOMAIN} {
+	reverse_proxy appsmith:80
+}
+
+docs.{$DOMAIN} {
+	reverse_proxy docmost:3000
+}
+
+# ── Your Application ─────────────────────────
+
+# app.{$DOMAIN} {
+# 	reverse_proxy your-app:PORT
+# }

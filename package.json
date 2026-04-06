@@ -1,0 +1,24 @@
+{
+  "name": "autonomyx-fast-saas-toolkit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Enterprise SaaS launchpad — 17 OSS tools pre-wired with Docker Compose, CLI scaffolding, and Claude Code skill",
+  "author": "OpenAutonomyx",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openautonomyx/autonomyx-fast-saas-toolkit.git"
+  },
+  "keywords": [
+    "saas",
+    "enterprise",
+    "toolkit",
+    "docker-compose",
+    "multi-tenant",
+    "autonomyx"
+  ],
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=10.0.0"
+  }
+}

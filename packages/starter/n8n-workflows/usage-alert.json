@@ -1,0 +1,54 @@
+{
+  "name": "Usage Limit Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] }
+      },
+      "name": "Every Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT t.name, t.slug, t.plan, COUNT(u.id) as api_calls_this_month FROM tenants t LEFT JOIN usage_events u ON u.tenant_id = t.id AND u.timestamp > DATE_TRUNC('month', NOW()) WHERE t.status = 'active' GROUP BY t.id HAVING COUNT(u.id) > CASE t.plan WHEN 'free' THEN 800 WHEN 'starter' THEN 8000 WHEN 'pro' THEN 80000 ELSE 999999999 END"
+      },
+      "name": "Check Usage",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [500, 300],
+      "credentials": { "postgres": { "name": "SaaS DB" } }
+    },
+    {
+      "parameters": {
+        "conditions": { "number": [{ "value1": "={{ $json.length }}", "operation": "larger", "value2": 0 }] }
+      },
+      "name": "Has Alerts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.ADMIN_EMAIL }}",
+        "toEmail": "={{ $env.ADMIN_EMAIL }}",
+        "subject": "[Alert] Tenants approaching usage limits",
+        "text": "The following tenants are at 80%+ of their monthly API call limit:\n\n{{ $json.map(t => `- ${t.name} (${t.slug}): ${t.api_calls_this_month} calls on ${t.plan} plan`).join('\\n') }}"
+      },
+      "name": "Send Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [950, 250]
+    }
+  ],
+  "connections": {
+    "Every Hour": { "main": [[{ "node": "Check Usage", "type": "main", "index": 0 }]] },
+    "Check Usage": { "main": [[{ "node": "Has Alerts?", "type": "main", "index": 0 }]] },
+    "Has Alerts?": { "main": [[{ "node": "Send Alert", "type": "main", "index": 0 }], []] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "saas-toolkit" }]
+}

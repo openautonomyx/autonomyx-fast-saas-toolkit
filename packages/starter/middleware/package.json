@@ -1,0 +1,30 @@
+{
+  "name": "@autonomyx/saas-middleware",
+  "version": "0.1.0",
+  "description": "Multi-tenancy middleware for the Autonomyx Fast SaaS Toolkit",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./tenant-context": "./dist/tenant-context.js",
+    "./auth-guard": "./dist/auth-guard.js",
+    "./rate-limiter": "./dist/rate-limiter.js",
+    "./usage-tracker": "./dist/usage-tracker.js",
+    "./feature-flags": "./dist/feature-flags.js",
+    "./health": "./dist/health.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "jose": "^6.0.0",
+    "pg": "^8.13.0",
+    "ioredis": "^5.4.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.0",
+    "typescript": "^5.7.0"
+  }
+}
