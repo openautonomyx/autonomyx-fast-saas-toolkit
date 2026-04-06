@@ -1,114 +1,139 @@
 # Autonomyx Fast SaaS Toolkit
 
+[![CI](https://github.com/openautonomyx/autonomyx-fast-saas-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/openautonomyx/autonomyx-fast-saas-toolkit/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![npm](https://img.shields.io/npm/v/@autonomyx/fast-saas)](https://www.npmjs.com/package/@autonomyx/fast-saas)
+
 Launch an enterprise SaaS product in minutes, not months. Pre-wired Docker Compose stack with 17 open-source tools covering auth, billing, monitoring, analytics, email, admin, and workflow automation.
 
 ## What's Included
 
-### Essential (always on)
-- **PostgreSQL 16** — Primary database
-- **Redis 7** — Cache, sessions, rate limiting
-- **Caddy** — Reverse proxy with automatic HTTPS
-
-### Core (default on)
-- **Logto** — Authentication, SSO, RBAC, multi-tenant organizations
-- **Lago** — Usage-based billing and subscriptions
-- **RustFS** — S3-compatible object storage
-
-### Ops (default on)
-- **GlitchTip** — Error tracking (Sentry-compatible)
-- **Uptime Kuma** — Uptime monitoring and status pages
-- **Grafana + Prometheus + Loki** — Metrics, dashboards, log aggregation
-
-### Growth (opt-in)
-- **Matomo** — Web analytics (GDPR-compliant)
-- **PostHog** — Product analytics and feature flags
-- **Mautic** — Email marketing automation
-- **Stalwart** — Full SMTP/IMAP mail server
-- **NocoDB** — Admin dashboard (spreadsheet over databases)
-- **n8n** — Workflow automation
-- **Appsmith** — Low-code internal tools
-- **Docmost** — Knowledge base and documentation
+| Layer | Services | Default |
+|---|---|---|
+| **Essential** | PostgreSQL 16, Redis 7, Caddy | Always on |
+| **Core** | Logto (auth/SSO), Lago (billing), RustFS (S3 storage) | On |
+| **Ops** | GlitchTip (errors), Uptime Kuma (status), Grafana + Prometheus + Loki (metrics) | On |
+| **Growth** | Matomo, PostHog, Mautic, Stalwart, NocoDB, n8n, Appsmith, Docmost | Opt-in |
 
 ## Quick Start
 
+### Option A: CLI (recommended)
+
 ```bash
-# Clone
+npm install -g @autonomyx/fast-saas
+fast-saas init my-saas
+cd my-saas && make up
+```
+
+### Option B: Clone starter
+
+```bash
 git clone https://github.com/openautonomyx/autonomyx-fast-saas-toolkit.git
 cd autonomyx-fast-saas-toolkit/packages/starter
+cp .env.example .env    # Edit with your domain + secrets
+make setup && make up
+```
 
-# Configure
-cp .env.example .env
-# Edit .env with your domain and secrets
+### Option C: Claude Code skill
 
-# Setup databases
-make setup
-
-# Start core + ops
-make up
-
-# Check health
-make health
+```
+/fast-saas-toolkit
+> scaffold a new SaaS project called acme
 ```
 
 ## Architecture
 
 ```
 Internet → Caddy (:80/:443, auto-HTTPS)
-  auth.DOMAIN       → Logto
-  billing.DOMAIN    → Lago
-  monitor.DOMAIN    → Grafana
-  errors.DOMAIN     → GlitchTip
-  status.DOMAIN     → Uptime Kuma
-  analytics.DOMAIN  → Matomo
-  email.DOMAIN      → Mautic
-  admin.DOMAIN      → NocoDB
-  auto.DOMAIN       → n8n
-  storage.DOMAIN    → RustFS
-  docs.DOMAIN       → Docmost
-  app.DOMAIN        → Your Application
+  ├── auth.DOMAIN        → Logto        (SSO/RBAC)
+  ├── billing.DOMAIN     → Lago         (subscriptions)
+  ├── monitor.DOMAIN     → Grafana      (dashboards)
+  ├── errors.DOMAIN      → GlitchTip    (Sentry-compatible)
+  ├── status.DOMAIN      → Uptime Kuma  (status page)
+  ├── analytics.DOMAIN   → Matomo       (web analytics)
+  ├── email.DOMAIN       → Mautic       (marketing)
+  ├── admin.DOMAIN       → NocoDB       (admin dashboard)
+  ├── auto.DOMAIN        → n8n          (workflows)
+  ├── storage.DOMAIN     → RustFS       (S3 storage)
+  ├── docs.DOMAIN        → Docmost      (knowledge base)
+  └── app.DOMAIN         → Your App
 
-Internal: PostgreSQL, Redis (shared bridge network)
+Internal: PostgreSQL + Redis (shared Docker bridge)
 ```
 
 ## Multi-Tenancy Middleware
 
-The `@autonomyx/saas-middleware` package provides:
+The `@autonomyx/saas-middleware` TypeScript package provides:
 
+- **Auth Guard** — Validates Logto JWTs and API keys (OIDC/JWKS)
 - **Tenant Context** — Resolves tenant from JWT, loads plan and settings
-- **Auth Guard** — Validates Logto JWTs and API keys
-- **Rate Limiter** — Sliding-window per-tenant rate limiting via Redis
-- **Usage Tracker** — Buffers API usage events, forwards to Lago for billing
-- **Feature Flags** — Plan-based feature gating (free/starter/pro/enterprise)
-- **Health Check** — PostgreSQL + Redis connectivity check
+- **Rate Limiter** — Sliding-window per-tenant limits via Redis sorted sets
+- **Usage Tracker** — Buffers API events, flushes to PostgreSQL, forwards to Lago
+- **Feature Flags** — Plan-based gating (free / starter / pro / enterprise)
+- **Health Check** — PostgreSQL + Redis connectivity endpoint
+
+```typescript
+import { createAuthGuard, createTenantContext, createRateLimiter } from '@autonomyx/saas-middleware';
+
+app.use(createAuthGuard({ logtoEndpoint: 'https://auth.example.com/oidc' }));
+app.use(createTenantContext({ db }));
+app.use(createRateLimiter({ redis }));
+```
 
 ## Pre-Built Automation
 
-### n8n Workflows
-- **Welcome Email** — Sends onboarding email on tenant signup
-- **Usage Alert** — Hourly check for tenants approaching limits
-- **Error Alert** — GlitchTip webhook forwarding for critical errors
+### Grafana Dashboards (4)
+SaaS Overview | Tenant Usage | Infrastructure | Billing Overview
 
-### Grafana Dashboards
-- **SaaS Overview** — Active tenants, API request rates, error rates, service health
+### Prometheus Alerts (10)
+ServiceDown | HighErrorRate | HighLatency | HighCPU | HighMemory | DiskSpaceLow | PostgresConnectionsHigh | RedisMemoryHigh | TenantOverLimit | BillingWebhookFailure
+
+### n8n Workflows (6)
+Welcome Email | Usage Alert | Error Alert | Daily Backup | Billing Sync | Onboarding Drip
+
+## CLI Commands
+
+```
+fast-saas init [name]     # Interactive project scaffolding
+fast-saas catalog         # List all 17 modules
+fast-saas add <module>    # Add a module (resolves dependencies)
+fast-saas remove <module> # Remove a module (checks dependents)
+fast-saas up [--detach]   # Start services
+fast-saas down            # Stop services
+fast-saas health          # Health check all services
+fast-saas env [--regen]   # Validate/regenerate .env
+```
+
+## Claude Code Skill
+
+The `/fast-saas-toolkit` skill has 5 modes:
+
+| Mode | Trigger | What it does |
+|---|---|---|
+| **Scaffold** | "create a SaaS project" | Interactive project generation |
+| **Configure** | "set up billing plans" | Programs services via 8 MCP servers |
+| **Convert** | "turn this into a SaaS" | Wraps oss-to-saas with pre-wired services |
+| **Deploy** | "deploy to production" | Wraps deploy-to-coolify with pre-flight checks |
+| **Diagnose** | "why is auth down?" | Health checks, log analysis, troubleshooting |
 
 ## Project Structure
 
 ```
 packages/
-  cli/                  # @autonomyx/fast-saas CLI (coming soon)
+  cli/                  # @autonomyx/fast-saas CLI (TypeScript)
   starter/              # Docker Compose reference stack
-    docker-compose.yml  # All 17 services with profiles
-    Caddyfile           # Reverse proxy routes
-    .env.example        # All configuration variables
-    Makefile            # Lifecycle commands
-    middleware/          # @autonomyx/saas-middleware (TypeScript)
-    migrations/          # PostgreSQL schema (5 files)
+    docker-compose.yml  # 17 services with profiles
+    Caddyfile           # Reverse proxy (14 subdomain routes)
+    middleware/          # @autonomyx/saas-middleware
+    migrations/          # PostgreSQL schema (5 tables)
     scripts/             # setup, seed, backup, health-check
-    n8n-workflows/       # Pre-built automation (3 workflows)
-    grafana-dashboards/  # Pre-built dashboards
-    services/            # Per-service configuration
-  skill/                # Claude Code skill (coming soon)
-docs/                   # Documentation (coming soon)
+    n8n-workflows/       # 6 pre-built workflow templates
+    grafana-dashboards/  # 4 pre-built dashboards
+    services/            # Per-service configs + READMEs
+  skill/                # Claude Code skill + config templates
+docs/                   # 15 documentation files
+  modules/              # Per-module integration guides
+  templates/            # Launch checklist, pricing page, investor metrics
 ```
 
 ## Resource Requirements
@@ -118,6 +143,24 @@ docs/                   # Documentation (coming soon)
 | Minimal (essential + core) | 2 | 4 GB | 20 GB | ~$12-24 |
 | Standard (+ ops) | 3 | 6 GB | 30 GB | ~$18-36 |
 | Full (+ all growth) | 4 | 8 GB | 40 GB | ~$24-48 |
+
+## Documentation
+
+- [Quick Start](docs/index.md)
+- [Architecture](docs/architecture.md)
+- [CLI Reference](docs/cli-reference.md)
+- [Module Guides](docs/modules/)
+- [Deployment](docs/deployment.md)
+- [Security](docs/security.md)
+- [Customization](docs/customization.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Launch Checklist](docs/templates/launch-checklist.md)
+- [Pricing Page Template](docs/templates/pricing-page.md)
+- [Investor Metrics Template](docs/templates/investor-metrics.md)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

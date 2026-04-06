@@ -1,5 +1,5 @@
 import type { Pool } from "pg";
-import type Redis from "ioredis";
+import type { Redis } from "ioredis";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 export interface HealthCheckOptions {

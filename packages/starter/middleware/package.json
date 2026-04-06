@@ -26,5 +26,19 @@
   "devDependencies": {
     "@types/pg": "^8.11.0",
     "typescript": "^5.7.0"
-  }
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openautonomyx/autonomyx-fast-saas-toolkit.git",
+    "directory": "packages/starter/middleware"
+  },
+  "files": [
+    "dist/**"
+  ],
+  "keywords": ["saas", "middleware", "multi-tenant", "auth", "rate-limit", "billing", "autonomyx"]
 }

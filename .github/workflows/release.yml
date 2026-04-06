@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish-cli:
+    name: Publish CLI to npm
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build CLI
+        run: pnpm --filter @autonomyx/fast-saas build
+
+      - name: Build middleware
+        run: pnpm --filter @autonomyx/saas-middleware build
+
+      - name: Publish CLI
+        run: pnpm --filter @autonomyx/fast-saas publish --no-git-checks --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish middleware
+        run: pnpm --filter @autonomyx/saas-middleware publish --no-git-checks --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: publish-cli
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          body: |
+            ## Autonomyx Fast SaaS Toolkit ${{ github.ref_name }}
+
+            ### Install
+            ```bash
+            npm install -g @autonomyx/fast-saas
+            fast-saas init my-project
+            ```
+
+            ### What's Included
+            - 17 OSS services (auth, billing, monitoring, analytics, email, admin, automation)
+            - CLI scaffolding tool (`fast-saas`)
+            - Multi-tenancy TypeScript middleware
+            - Pre-built Grafana dashboards, Prometheus alerts, n8n workflows
+            - Claude Code skill (`/fast-saas-toolkit`)
+            - Complete documentation suite
