@@ -19,6 +19,7 @@ import { membersRouter } from "./routes/members.js";
 import { apiKeysRouter } from "./routes/api-keys.js";
 import { usageRouter } from "./routes/usage.js";
 import { adminRouter } from "./routes/admin.js";
+import { aiRouter } from "./routes/ai.js";
 
 const PORT = parseInt(process.env.API_PORT || "4000");
 const LOGTO_ENDPOINT = process.env.LOGTO_ENDPOINT || "https://auth.localhost/oidc";
@@ -82,6 +83,7 @@ app.use("/api/v1/tenants/:tenantId/members", membersRouter(db));
 app.use("/api/v1/tenants/:tenantId/api-keys", apiKeysRouter(db));
 app.use("/api/v1/tenants/:tenantId/usage", usageRouter(db));
 app.use("/api/v1/admin", adminRouter(db));
+app.use("/api/v1/ai", aiRouter());
 
 // ── Error handler ─────────────────────────────
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

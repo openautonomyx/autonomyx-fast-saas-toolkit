@@ -563,6 +563,209 @@ server.tool(
 );
 
 // ═══════════════════════════════════════════════
+// AI TOOLS — OLLAMA (5)
+// ═══════════════════════════════════════════════
+
+server.tool(
+  "fast_saas_ollama_list_models",
+  "List all locally available Ollama models",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/ai/ollama/models");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_ollama_pull_model",
+  "Download a model from the Ollama library",
+  { model: z.string().describe("Model name (e.g., llama3.2, mistral, codellama)") },
+  async ({ model }) => {
+    try {
+      const result = await client.post("/api/v1/ai/ollama/pull", { model });
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_ollama_generate",
+  "Generate a completion with a local Ollama model",
+  {
+    model: z.string().describe("Model name"),
+    prompt: z.string().describe("Prompt text"),
+    system: z.string().optional().describe("System prompt"),
+  },
+  async (args) => {
+    try {
+      const result = await client.post("/api/v1/ai/ollama/generate", args);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_ollama_chat",
+  "Multi-turn chat with a local Ollama model",
+  {
+    model: z.string().describe("Model name"),
+    messages: z.array(z.object({
+      role: z.enum(["system", "user", "assistant"]),
+      content: z.string(),
+    })).describe("Chat messages array"),
+  },
+  async (args) => {
+    try {
+      const result = await client.post("/api/v1/ai/ollama/chat", args);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_ollama_delete_model",
+  "Delete a locally downloaded Ollama model",
+  { model: z.string().describe("Model name to delete") },
+  async ({ model }) => {
+    try {
+      const result = await client.delete(`/api/v1/ai/ollama/models/${encodeURIComponent(model)}`);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+// ═══════════════════════════════════════════════
+// AI TOOLS — LANGFLOW (4)
+// ═══════════════════════════════════════════════
+
+server.tool(
+  "fast_saas_langflow_list_flows",
+  "List all Langflow AI workflows",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/ai/langflow/flows");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_langflow_get_flow",
+  "Get details of a specific Langflow workflow",
+  { flow_id: z.string().describe("Flow UUID") },
+  async ({ flow_id }) => {
+    try {
+      const result = await client.get(`/api/v1/ai/langflow/flows/${flow_id}`);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_langflow_run_flow",
+  "Execute a Langflow workflow with input data",
+  {
+    flow_id: z.string().describe("Flow UUID to run"),
+    input_value: z.string().optional().describe("Input text for the flow"),
+    tweaks: z.record(z.unknown()).optional().describe("Component tweaks (overrides)"),
+  },
+  async ({ flow_id, ...body }) => {
+    try {
+      const result = await client.post(`/api/v1/ai/langflow/flows/${flow_id}/run`, body);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_langflow_list_components",
+  "List all available Langflow components (LLMs, tools, chains, etc.)",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/ai/langflow/components");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+// ═══════════════════════════════════════════════
+// AI TOOLS — CLAUDE AGENT (3)
+// ═══════════════════════════════════════════════
+
+server.tool(
+  "fast_saas_claude_run",
+  "Start a Claude Code agent job (returns jobId for async polling)",
+  {
+    prompt: z.string().describe("Task prompt for Claude Code"),
+    workdir: z.string().optional().describe("Working directory (default: /workspace)"),
+    timeout: z.number().optional().describe("Timeout in ms (default: 300000)"),
+    max_turns: z.number().optional().describe("Max conversation turns (default: 25)"),
+  },
+  async (args) => {
+    try {
+      const result = await client.post("/api/v1/ai/claude/run", args);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_claude_get_job",
+  "Get status and result of a Claude Code agent job",
+  { job_id: z.string().describe("Job UUID from fast_saas_claude_run") },
+  async ({ job_id }) => {
+    try {
+      const result = await client.get(`/api/v1/ai/claude/jobs/${job_id}`);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_claude_list_jobs",
+  "List all Claude Code agent jobs",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/ai/claude/jobs");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+// ═══════════════════════════════════════════════
+// AI TOOLS — SYSTEM (2)
+// ═══════════════════════════════════════════════
+
+server.tool(
+  "fast_saas_ai_health",
+  "Check health of all AI services (Ollama, Langflow, Claude Agent, Langfuse)",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/ai/health");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_langfuse_health",
+  "Check Langfuse LLM observability service health",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/ai/langfuse/health");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+// ═══════════════════════════════════════════════
 // START SERVER
 // ═══════════════════════════════════════════════
 
