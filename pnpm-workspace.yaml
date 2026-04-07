@@ -1,3 +1,5 @@
 packages:
   - "packages/cli"
+  - "packages/api"
+  - "packages/mcp"
   - "packages/starter/middleware"

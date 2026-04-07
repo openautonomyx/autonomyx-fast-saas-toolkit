@@ -28,6 +28,10 @@ storage-console.{$DOMAIN} {
 	reverse_proxy rustfs:9001
 }
 
+api.{$DOMAIN} {
+	reverse_proxy saas-api:4000
+}
+
 # ── Ops ───────────────────────────────────────
 
 monitor.{$DOMAIN} {

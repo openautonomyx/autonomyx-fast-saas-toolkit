@@ -49,6 +49,10 @@ services:
     ports:
       - "8080:8080"
 
+  saas-api:
+    ports:
+      - "4000:4000"
+
   # Caddy in dev mode serves on localhost without HTTPS
   caddy:
     environment:
