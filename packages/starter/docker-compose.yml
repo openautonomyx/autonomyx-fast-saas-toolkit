@@ -467,14 +467,11 @@ services:
     profiles: ["ai"]
     environment:
       LANGFLOW_DATABASE_URL: postgresql://${POSTGRES_USER:-saas}:${POSTGRES_PASSWORD}@postgres:5432/langflow
-      LANGFLOW_CONFIG_DIR: /app/langflow
       LANGFLOW_AUTO_LOGIN: ${LANGFLOW_AUTO_LOGIN:-true}
       LANGFLOW_SUPERUSER: ${LANGFLOW_SUPERUSER:-admin}
       LANGFLOW_SUPERUSER_PASSWORD: ${LANGFLOW_SUPERUSER_PASSWORD}
       LANGFLOW_SECRET_KEY: ${LANGFLOW_SECRET_KEY}
       OLLAMA_BASE_URL: http://ollama:11434
-    volumes:
-      - langflow-data:/app/langflow
     depends_on:
       postgres:
         condition: service_healthy
