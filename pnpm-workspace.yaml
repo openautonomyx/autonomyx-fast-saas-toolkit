@@ -2,4 +2,5 @@ packages:
   - "packages/cli"
   - "packages/api"
   - "packages/mcp"
+  - "packages/dashboard"
   - "packages/starter/middleware"

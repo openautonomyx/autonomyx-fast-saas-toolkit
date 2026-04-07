@@ -146,6 +146,25 @@ services:
       timeout: 5s
       retries: 5
 
+  dashboard:
+    <<: *common
+    build:
+      context: ../dashboard
+      dockerfile: Dockerfile
+    profiles: ["core"]
+    environment:
+      API_URL: http://saas-api:4000
+      DOMAIN: ${DOMAIN}
+      API_KEY: ${PLATFORM_API_KEY}
+    depends_on:
+      saas-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3200 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
   saas-api:
     <<: *common
     build:

@@ -53,6 +53,10 @@ services:
     ports:
       - "4000:4000"
 
+  dashboard:
+    ports:
+      - "3200:3200"
+
   ollama:
     ports:
       - "11434:11434"

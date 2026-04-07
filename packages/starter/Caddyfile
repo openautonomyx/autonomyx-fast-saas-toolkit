@@ -32,6 +32,10 @@ api.{$DOMAIN} {
 	reverse_proxy saas-api:4000
 }
 
+dashboard.{$DOMAIN} {
+	reverse_proxy dashboard:3200
+}
+
 # ── Ops ───────────────────────────────────────
 
 monitor.{$DOMAIN} {
