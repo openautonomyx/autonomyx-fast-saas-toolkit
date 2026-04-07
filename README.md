@@ -3,6 +3,7 @@
 [![CI](https://github.com/openautonomyx/autonomyx-fast-saas-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/openautonomyx/autonomyx-fast-saas-toolkit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![npm](https://img.shields.io/npm/v/@autonomyx/fast-saas)](https://www.npmjs.com/package/@autonomyx/fast-saas)
+[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink)](https://github.com/sponsors/openautonomyx)
 
 Launch an enterprise SaaS product in minutes, not months. **22 open-source services** pre-wired with Docker Compose, a CLI scaffolding tool, a REST API, 44 MCP tools, and a Claude Code skill.
 
@@ -254,6 +255,30 @@ These connect via API keys (no self-hosted containers):
 - [Launch Checklist](docs/templates/launch-checklist.md)
 - [Pricing Page Template](docs/templates/pricing-page.md)
 - [Investor Metrics Template](docs/templates/investor-metrics.md)
+
+## Sponsor
+
+If this toolkit saves you time, consider sponsoring its development. Your support helps maintain 22 modules, keep dependencies updated, and build new features.
+
+[![Sponsor on GitHub](https://img.shields.io/badge/Sponsor_on_GitHub-%E2%9D%A4-pink?style=for-the-badge&logo=github)](https://github.com/sponsors/openautonomyx)
+
+**What sponsorship funds:**
+- Ongoing maintenance of 22 open-source service integrations
+- New module development (vector DBs, payment gateways, CRM integrations)
+- Security updates and Docker image pinning
+- Documentation, tutorials, and video guides
+- Community support and issue triage
+
+**Sponsor tiers:**
+
+| Tier | Amount | Perks |
+|---|---|---|
+| Backer | $5/mo | Name in README sponsors section |
+| Supporter | $25/mo | Priority issue response + logo in README |
+| Gold | $100/mo | 1 hour/month consulting + feature request priority |
+| Platinum | $500/mo | Dedicated support channel + custom module development |
+
+[Become a sponsor](https://github.com/sponsors/openautonomyx)
 
 ## Contributing
 
