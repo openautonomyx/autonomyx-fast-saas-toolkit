@@ -1,6 +1,6 @@
 ---
 name: fast-saas-toolkit
-description: "Orchestrates the Autonomyx Fast SaaS Toolkit — scaffolds enterprise SaaS projects, configures services via MCP servers, converts OSS projects, deploys to Coolify, and diagnoses service health. Bundles 17 open-source tools (Logto, Lago, Grafana, n8n, etc.) into a pre-wired Docker Compose stack."
+description: "Orchestrates the Autonomyx Fast SaaS Toolkit — scaffolds enterprise SaaS projects, configures services via 44 MCP tools, converts OSS projects, deploys to Coolify, and diagnoses service health. Bundles 22 open-source tools across 5 layers (essential/core/ops/growth/ai) including LibreChat, Langflow, Ollama, Claude Agent, and Langfuse."
 user-invocable: true
 allowed-tools:
   - Read
@@ -388,6 +388,23 @@ If MCP servers are available, use them for deeper diagnosis:
 | appsmith | Appsmith | growth | — | tools |
 | docmost | Docmost | growth | postgres, redis | docs |
 | posthog | PostHog | growth | postgres, redis | product |
+| librechat | LibreChat | ai | redis (+ MongoDB, Meilisearch sidecars) | chat |
+| langflow | Langflow | ai | postgres | flow |
+| ollama | Ollama | ai | — | models |
+| claude-agent | Claude Agent | ai | — | agent |
+| langfuse | Langfuse | ai | postgres | observe |
+
+### AI MCP Tools (14 tools via fast_saas_* prefix)
+
+When the `@autonomyx/mcp-fast-saas` MCP server is connected, use these tools for AI operations:
+
+**Ollama (5):** `fast_saas_ollama_list_models`, `fast_saas_ollama_pull_model`, `fast_saas_ollama_generate`, `fast_saas_ollama_chat`, `fast_saas_ollama_delete_model`
+
+**Langflow (4):** `fast_saas_langflow_list_flows`, `fast_saas_langflow_get_flow`, `fast_saas_langflow_run_flow`, `fast_saas_langflow_list_components`
+
+**Claude Agent (3):** `fast_saas_claude_run`, `fast_saas_claude_get_job`, `fast_saas_claude_list_jobs`
+
+**AI System (2):** `fast_saas_ai_health`, `fast_saas_langfuse_health`
 
 ### Multi-Tenancy Architecture
 
@@ -417,8 +434,10 @@ GitHub: `https://github.com/openautonomyx/autonomyx-fast-saas-toolkit`
 
 ```
 packages/
-  cli/       — @autonomyx/fast-saas CLI (TypeScript)
-  starter/   — Reference Docker Compose stack
+  api/       — REST API server (38 endpoints)
+  cli/       — @autonomyx/fast-saas CLI (22 modules, 9 commands)
+  mcp/       — MCP server (44 tools)
+  starter/   — Docker Compose stack (25 services, 5 profiles)
   skill/     — This skill file
-docs/        — Documentation
+docs/        — Documentation (15 files)
 ```
