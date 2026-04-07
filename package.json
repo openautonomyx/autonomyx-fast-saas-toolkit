@@ -1,6 +1,6 @@
 {
   "name": "autonomyx-fast-saas-toolkit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Enterprise SaaS launchpad — 17 OSS tools pre-wired with Docker Compose, CLI scaffolding, and Claude Code skill",
   "author": "OpenAutonomyx",
