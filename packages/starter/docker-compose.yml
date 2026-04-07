@@ -534,6 +534,14 @@ services:
       DOMAIN_CLIENT: https://chat.${DOMAIN}
       DOMAIN_SERVER: https://chat.${DOMAIN}
       OLLAMA_BASE_URL: http://ollama:11434
+      # SMTP (use Stalwart internal or any external provider)
+      EMAIL_SERVICE: custom
+      EMAIL_HOST: ${SMTP_HOST:-stalwart}
+      EMAIL_PORT: ${SMTP_PORT:-25}
+      EMAIL_USERNAME: ${SMTP_USER:-noreply}
+      EMAIL_PASSWORD: ${SMTP_PASSWORD:-}
+      EMAIL_FROM: noreply@${DOMAIN}
+      EMAIL_FROM_NAME: ${APP_NAME:-SaaS Platform}
     volumes:
       - librechat-uploads:/app/uploads
       - librechat-logs:/app/logs
@@ -581,6 +589,9 @@ services:
       SALT: ${LANGFUSE_SALT}
       TELEMETRY_ENABLED: ${LANGFUSE_TELEMETRY_ENABLED:-false}
       LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "true"
+      # SMTP (use Stalwart internal or any external provider)
+      SMTP_CONNECTION_URL: smtp://${SMTP_USER:-noreply}:${SMTP_PASSWORD:-}@${SMTP_HOST:-stalwart}:${SMTP_PORT:-25}
+      EMAIL_FROM_ADDRESS: noreply@${DOMAIN}
     depends_on:
       postgres:
         condition: service_healthy
