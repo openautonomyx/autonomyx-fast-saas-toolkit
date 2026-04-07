@@ -15,6 +15,7 @@ export function catalogCommand() {
     core: "Core (default on)",
     ops: "Ops (default on)",
     growth: "Growth (opt-in)",
+    ai: "AI (opt-in — next-gen LLM layer)",
   };
 
   for (const [group, label] of Object.entries(groupLabels) as [ModuleGroup, string][]) {

@@ -95,8 +95,19 @@ export async function initCommand(projectName?: string) {
     })),
   });
 
+  // AI modules (opt-in)
+  const aiModules = getModulesByGroup("ai");
+  const selectedAi = await checkbox({
+    message: "AI modules (next-gen LLM layer):",
+    choices: aiModules.map(m => ({
+      name: `${m.name} — ${m.description}`,
+      value: m.id,
+      checked: false,
+    })),
+  });
+
   // Resolve all modules with dependencies
-  const allSelected = [...selectedCore, ...selectedOps, ...selectedGrowth];
+  const allSelected = [...selectedCore, ...selectedOps, ...selectedGrowth, ...selectedAi];
   const { ordered, autoAdded } = resolveModules(allSelected);
 
   if (autoAdded.length > 0) {
@@ -111,6 +122,7 @@ export async function initCommand(projectName?: string) {
   if (selectedCore.length > 0) profiles.push("core");
   if (selectedOps.length > 0) profiles.push("ops");
   if (selectedGrowth.length > 0) profiles.push("growth");
+  if (selectedAi.length > 0) profiles.push("ai");
 
   // Step 4: Generate project
   console.log("");

@@ -1,0 +1,9 @@
+{
+  "name": "claude-agent-runner",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "HTTP API wrapper for Claude Code agent — runs coding tasks on demand",
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}

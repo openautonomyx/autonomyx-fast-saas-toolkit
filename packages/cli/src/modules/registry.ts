@@ -24,7 +24,7 @@ export interface HealthCheck {
   intervalSeconds?: number;
 }
 
-export type ModuleGroup = "essential" | "core" | "ops" | "growth";
+export type ModuleGroup = "essential" | "core" | "ops" | "growth" | "ai";
 
 export interface ModuleDefinition {
   id: string;
@@ -398,6 +398,107 @@ const posthog: ModuleDefinition = {
   volumes: ["posthog-data:/var/lib/posthog"],
 };
 
+// ── AI Modules ────────────────────────────────
+
+const librechat: ModuleDefinition = {
+  id: "librechat",
+  name: "LibreChat",
+  description: "Multi-model AI chat interface (ChatGPT alternative)",
+  group: "ai",
+  defaultEnabled: false,
+  dependencies: ["redis"],
+  image: "ghcr.io/danny-avila/librechat:latest",
+  ports: { web: 3080 },
+  envVars: [
+    { key: "LIBRECHAT_CREDS_KEY", description: "Credentials encryption key (32 hex chars)", secret: true, required: true },
+    { key: "LIBRECHAT_CREDS_IV", description: "Credentials encryption IV (16 hex chars)", secret: true, required: true },
+    { key: "LIBRECHAT_JWT_SECRET", description: "JWT secret", secret: true, required: true },
+    { key: "LIBRECHAT_JWT_REFRESH_SECRET", description: "JWT refresh secret", secret: true, required: true },
+    { key: "MEILI_MASTER_KEY", description: "Meilisearch master key", secret: true, required: true },
+    { key: "LIBRECHAT_MONGODB_PASSWORD", description: "MongoDB password", secret: true, required: true },
+  ],
+  healthCheck: { path: "/api/health", port: 3080 },
+  redisDb: 4,
+  caddyRoutes: [{ subdomain: "chat", target: "librechat:3080" }],
+  volumes: ["librechat-uploads:/app/uploads", "librechat-logs:/app/logs"],
+  sidecars: [
+    {
+      name: "librechat-mongodb",
+      image: "mongo:8.0",
+      envVars: [
+        { key: "MONGO_INITDB_ROOT_USERNAME", description: "MongoDB root user", default: "librechat" },
+        { key: "MONGO_INITDB_ROOT_PASSWORD", description: "MongoDB root password", secret: true },
+      ],
+      volumes: ["librechat-mongodb-data:/data/db"],
+      healthCheck: { path: "", port: 27017, method: "mongosh" },
+    },
+    {
+      name: "librechat-meilisearch",
+      image: "getmeili/meilisearch:v1.35.1",
+      envVars: [
+        { key: "MEILI_MASTER_KEY", description: "Meilisearch master key", secret: true },
+      ],
+      volumes: ["librechat-meilisearch-data:/meili_data"],
+      healthCheck: { path: "/health", port: 7700 },
+    },
+  ],
+};
+
+const langflow: ModuleDefinition = {
+  id: "langflow",
+  name: "Langflow",
+  description: "Visual LLM workflow builder with API backend",
+  group: "ai",
+  defaultEnabled: false,
+  dependencies: ["postgres"],
+  image: "langflowai/langflow:latest",
+  ports: { web: 7860 },
+  envVars: [
+    { key: "LANGFLOW_SECRET_KEY", description: "Langflow secret key", secret: true, required: true },
+    { key: "LANGFLOW_AUTO_LOGIN", description: "Auto-login on startup", default: "true" },
+    { key: "LANGFLOW_SUPERUSER", description: "Admin username", default: "admin" },
+    { key: "LANGFLOW_SUPERUSER_PASSWORD", description: "Admin password", secret: true, required: true },
+  ],
+  healthCheck: { path: "/health", port: 7860, intervalSeconds: 30 },
+  pgDatabase: "langflow",
+  caddyRoutes: [{ subdomain: "flow", target: "langflow:7860" }],
+  volumes: ["langflow-data:/app/langflow"],
+};
+
+const ollama: ModuleDefinition = {
+  id: "ollama",
+  name: "Ollama",
+  description: "Run open-source LLMs locally (Llama, Mistral, Gemma, etc.)",
+  group: "ai",
+  defaultEnabled: false,
+  dependencies: [],
+  image: "ollama/ollama:latest",
+  ports: { api: 11434 },
+  envVars: [],
+  healthCheck: { path: "/", port: 11434, method: "ollama-check" },
+  caddyRoutes: [{ subdomain: "models", target: "ollama:11434" }],
+  volumes: ["ollama-data:/root/.ollama"],
+};
+
+const claudeAgent: ModuleDefinition = {
+  id: "claude-agent",
+  name: "Claude Agent",
+  description: "Containerized Claude Code agent runner with HTTP API",
+  group: "ai",
+  defaultEnabled: false,
+  dependencies: [],
+  image: "build", // Custom build from Dockerfile
+  ports: { api: 3100 },
+  envVars: [
+    { key: "ANTHROPIC_API_KEY", description: "Anthropic API key (required for Claude)", required: true },
+    { key: "CLAUDE_AGENT_API_KEY", description: "API key for the agent runner endpoint", secret: true, required: true },
+    { key: "CLAUDE_AGENT_PORT", description: "Agent runner port", default: "3100" },
+  ],
+  healthCheck: { path: "/health", port: 3100 },
+  caddyRoutes: [{ subdomain: "agent", target: "claude-agent:3100" }],
+  volumes: ["claude-agent-workspace:/workspace"],
+};
+
 // ── Registry ──────────────────────────────────
 
 export const MODULE_REGISTRY: Record<string, ModuleDefinition> = {
@@ -418,6 +519,10 @@ export const MODULE_REGISTRY: Record<string, ModuleDefinition> = {
   appsmith,
   docmost,
   posthog,
+  librechat,
+  langflow,
+  ollama,
+  "claude-agent": claudeAgent,
 };
 
 export const MODULE_GROUPS: Record<ModuleGroup, string[]> = {
@@ -425,6 +530,7 @@ export const MODULE_GROUPS: Record<ModuleGroup, string[]> = {
   core: ["logto", "lago", "rustfs"],
   ops: ["glitchtip", "uptime-kuma", "grafana-stack"],
   growth: ["matomo", "mautic", "stalwart", "nocodb", "n8n", "appsmith", "docmost", "posthog"],
+  ai: ["librechat", "langflow", "ollama", "claude-agent"],
 };
 
 export function getModule(id: string): ModuleDefinition | undefined {

@@ -227,6 +227,33 @@ function buildEnvironment(mod: ModuleDefinition): Record<string, string> {
       env.REDIS_URL = "redis://:${REDIS_PASSWORD}@redis:6379/3";
       env.SECRET_KEY = "${POSTHOG_SECRET_KEY}";
       break;
+    case "librechat":
+      env.MONGO_URI = "mongodb://librechat:${LIBRECHAT_MONGODB_PASSWORD}@librechat-mongodb:27017/LibreChat?authSource=admin";
+      env.MEILI_HOST = "http://librechat-meilisearch:7700";
+      env.MEILI_MASTER_KEY = "${MEILI_MASTER_KEY}";
+      env.CREDS_KEY = "${LIBRECHAT_CREDS_KEY}";
+      env.CREDS_IV = "${LIBRECHAT_CREDS_IV}";
+      env.JWT_SECRET = "${LIBRECHAT_JWT_SECRET}";
+      env.JWT_REFRESH_SECRET = "${LIBRECHAT_JWT_REFRESH_SECRET}";
+      env.REDIS_URI = "redis://:${REDIS_PASSWORD}@redis:6379/4";
+      env.DOMAIN_CLIENT = "https://chat.${DOMAIN}";
+      env.DOMAIN_SERVER = "https://chat.${DOMAIN}";
+      env.OLLAMA_BASE_URL = "http://ollama:11434";
+      break;
+    case "langflow":
+      env.LANGFLOW_DATABASE_URL = "postgresql://${POSTGRES_USER:-saas}:${POSTGRES_PASSWORD}@postgres:5432/langflow";
+      env.LANGFLOW_CONFIG_DIR = "/app/langflow";
+      env.LANGFLOW_AUTO_LOGIN = "${LANGFLOW_AUTO_LOGIN:-true}";
+      env.LANGFLOW_SUPERUSER = "${LANGFLOW_SUPERUSER:-admin}";
+      env.LANGFLOW_SUPERUSER_PASSWORD = "${LANGFLOW_SUPERUSER_PASSWORD}";
+      env.LANGFLOW_SECRET_KEY = "${LANGFLOW_SECRET_KEY}";
+      env.OLLAMA_BASE_URL = "http://ollama:11434";
+      break;
+    case "claude-agent":
+      env.ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY}";
+      env.CLAUDE_AGENT_API_KEY = "${CLAUDE_AGENT_API_KEY}";
+      env.PORT = "${CLAUDE_AGENT_PORT:-3100}";
+      break;
   }
 
   return env;
@@ -262,12 +289,16 @@ function buildHealthCheck(mod: ModuleDefinition) {
     case "redis-ping":
       test = ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"];
       break;
+    case "mongosh":
+      test = ["CMD-SHELL", `mongosh --eval "db.adminCommand('ping')" --quiet || exit 1`];
+      break;
+    case "ollama-check":
+      test = ["CMD-SHELL", `curl -sf http://localhost:${hc.port}/ | grep -q Ollama || exit 1`];
+      break;
     default:
       if (mod.id === "logto") {
-        // Logto image has wget but not curl
         test = ["CMD-SHELL", `wget -q --spider http://localhost:${hc.port}${hc.path} || exit 1`];
       } else if (mod.id === "rustfs") {
-        // RustFS returns 403 without auth — accept as alive
         test = ["CMD-SHELL", `curl -s -o /dev/null -w '%{http_code}' http://localhost:${hc.port}/ | grep -qE '^(200|403)' || exit 1`];
       } else {
         test = ["CMD-SHELL", `curl -f http://localhost:${hc.port}${hc.path} || exit 1`];
@@ -299,18 +330,40 @@ function buildSidecar(sidecar: NonNullable<ModuleDefinition["sidecars"]>[0], par
     env.MARIADB_DATABASE = "matomo";
     env.MARIADB_USER = "matomo";
     env.MARIADB_PASSWORD = "${MATOMO_DB_PASSWORD}";
+  } else if (sidecar.name === "librechat-mongodb") {
+    env.MONGO_INITDB_ROOT_USERNAME = "librechat";
+    env.MONGO_INITDB_ROOT_PASSWORD = "${LIBRECHAT_MONGODB_PASSWORD}";
+  } else if (sidecar.name === "librechat-meilisearch") {
+    env.MEILI_MASTER_KEY = "${MEILI_MASTER_KEY}";
+    env.MEILI_NO_ANALYTICS = "true";
   }
   if (Object.keys(env).length > 0) {
     service.environment = env;
   }
 
   if (sidecar.healthCheck) {
-    service.healthcheck = {
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"],
-      interval: "10s",
-      timeout: "5s",
-      retries: 5,
-    };
+    if (sidecar.name === "librechat-mongodb") {
+      service.healthcheck = {
+        test: ["CMD-SHELL", `mongosh --eval "db.adminCommand('ping')" --quiet || exit 1`],
+        interval: "10s",
+        timeout: "5s",
+        retries: 5,
+      };
+    } else if (sidecar.name === "librechat-meilisearch") {
+      service.healthcheck = {
+        test: ["CMD-SHELL", "curl -f http://localhost:7700/health || exit 1"],
+        interval: "10s",
+        timeout: "5s",
+        retries: 5,
+      };
+    } else {
+      service.healthcheck = {
+        test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"],
+        interval: "10s",
+        timeout: "5s",
+        retries: 5,
+      };
+    }
   }
 
   return service;

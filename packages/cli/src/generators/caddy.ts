@@ -17,6 +17,7 @@ export function generateCaddyfile(modules: ModuleDefinition[]): string {
     core: [],
     ops: [],
     growth: [],
+    ai: [],
   };
 
   for (const mod of modules) {

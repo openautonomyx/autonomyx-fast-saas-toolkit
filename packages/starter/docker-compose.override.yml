@@ -53,6 +53,22 @@ services:
     ports:
       - "4000:4000"
 
+  ollama:
+    ports:
+      - "11434:11434"
+
+  langflow:
+    ports:
+      - "7860:7860"
+
+  librechat:
+    ports:
+      - "3080:3080"
+
+  claude-agent:
+    ports:
+      - "3100:3100"
+
   # Caddy in dev mode serves on localhost without HTTPS
   caddy:
     environment:

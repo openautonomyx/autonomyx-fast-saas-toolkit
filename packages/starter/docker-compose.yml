@@ -440,6 +440,136 @@ services:
       timeout: 5s
       retries: 5
 
+  # ============================================================
+  # AI — LLM chat, visual workflows, local models, agent runner
+  # ============================================================
+
+  ollama:
+    <<: *common
+    image: ollama/ollama:latest
+    profiles: ["ai"]
+    volumes:
+      - ollama-data:/root/.ollama
+    # Uncomment for GPU passthrough (NVIDIA):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/ | grep -q Ollama || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  langflow:
+    <<: *common
+    image: langflowai/langflow:latest
+    profiles: ["ai"]
+    environment:
+      LANGFLOW_DATABASE_URL: postgresql://${POSTGRES_USER:-saas}:${POSTGRES_PASSWORD}@postgres:5432/langflow
+      LANGFLOW_CONFIG_DIR: /app/langflow
+      LANGFLOW_AUTO_LOGIN: ${LANGFLOW_AUTO_LOGIN:-true}
+      LANGFLOW_SUPERUSER: ${LANGFLOW_SUPERUSER:-admin}
+      LANGFLOW_SUPERUSER_PASSWORD: ${LANGFLOW_SUPERUSER_PASSWORD}
+      LANGFLOW_SECRET_KEY: ${LANGFLOW_SECRET_KEY}
+      OLLAMA_BASE_URL: http://ollama:11434
+    volumes:
+      - langflow-data:/app/langflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7860/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  librechat-mongodb:
+    <<: *common
+    image: mongo:8.0
+    profiles: ["ai"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: librechat
+      MONGO_INITDB_ROOT_PASSWORD: ${LIBRECHAT_MONGODB_PASSWORD}
+    volumes:
+      - librechat-mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --eval \"db.adminCommand('ping')\" --quiet || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  librechat-meilisearch:
+    <<: *common
+    image: getmeili/meilisearch:v1.35.1
+    profiles: ["ai"]
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - librechat-meilisearch-data:/meili_data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7700/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  librechat:
+    <<: *common
+    image: ghcr.io/danny-avila/librechat:latest
+    profiles: ["ai"]
+    environment:
+      MONGO_URI: mongodb://librechat:${LIBRECHAT_MONGODB_PASSWORD}@librechat-mongodb:27017/LibreChat?authSource=admin
+      MEILI_HOST: http://librechat-meilisearch:7700
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      CREDS_KEY: ${LIBRECHAT_CREDS_KEY}
+      CREDS_IV: ${LIBRECHAT_CREDS_IV}
+      JWT_SECRET: ${LIBRECHAT_JWT_SECRET}
+      JWT_REFRESH_SECRET: ${LIBRECHAT_JWT_REFRESH_SECRET}
+      REDIS_URI: redis://:${REDIS_PASSWORD}@redis:6379/4
+      DOMAIN_CLIENT: https://chat.${DOMAIN}
+      DOMAIN_SERVER: https://chat.${DOMAIN}
+      OLLAMA_BASE_URL: http://ollama:11434
+    volumes:
+      - librechat-uploads:/app/uploads
+      - librechat-logs:/app/logs
+      - ./services/librechat/librechat.yaml:/app/librechat.yaml:ro
+    depends_on:
+      librechat-mongodb:
+        condition: service_healthy
+      librechat-meilisearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3080/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  claude-agent:
+    <<: *common
+    build:
+      context: ./services/claude-agent
+      dockerfile: Dockerfile
+    profiles: ["ai"]
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      CLAUDE_AGENT_API_KEY: ${CLAUDE_AGENT_API_KEY}
+      PORT: ${CLAUDE_AGENT_PORT:-3100}
+    volumes:
+      - claude-agent-workspace:/workspace
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3100/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
 networks:
   saas-internal:
     driver: bridge
@@ -466,3 +596,10 @@ volumes:
   n8n-data:
   appsmith-data:
   docmost-data:
+  ollama-data:
+  langflow-data:
+  librechat-mongodb-data:
+  librechat-meilisearch-data:
+  librechat-uploads:
+  librechat-logs:
+  claude-agent-workspace:

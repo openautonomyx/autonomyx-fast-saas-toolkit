@@ -1,0 +1,40 @@
+# LibreChat Configuration — Autonomyx Fast SaaS Toolkit
+# Docs: https://www.librechat.ai/docs/configuration/librechat_yaml
+
+version: 1.2.1
+cache: true
+
+# ── Endpoints ──────────────────────────────────
+endpoints:
+  # Ollama (local models via OpenAI-compatible API)
+  custom:
+    - name: "Ollama"
+      apiKey: "ollama"
+      baseURL: "http://ollama:11434/v1"
+      models:
+        default: ["llama3.2", "mistral", "gemma2", "phi3", "codellama"]
+        fetch: true
+      titleConvo: true
+      titleModel: "llama3.2"
+      summarize: false
+      forcePrompt: false
+      modelDisplayLabel: "Ollama"
+      iconURL: "https://ollama.com/public/ollama.png"
+
+# ── Registration ───────────────────────────────
+registration:
+  socialLogins: ["google", "github", "openid"]
+  allowedDomains: []
+
+# ── Rate Limits ────────────────────────────────
+rateLimits:
+  fileUploads:
+    ipMax: 100
+    ipWindowInMinutes: 60
+    userMax: 50
+    userWindowInMinutes: 60
+  conversationsImport:
+    ipMax: 100
+    ipWindowInMinutes: 60
+    userMax: 50
+    userWindowInMinutes: 60

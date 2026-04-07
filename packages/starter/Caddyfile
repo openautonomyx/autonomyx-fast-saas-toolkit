@@ -72,6 +72,24 @@ docs.{$DOMAIN} {
 	reverse_proxy docmost:3000
 }
 
+# ── AI ────────────────────────────────────────
+
+chat.{$DOMAIN} {
+	reverse_proxy librechat:3080
+}
+
+flow.{$DOMAIN} {
+	reverse_proxy langflow:7860
+}
+
+models.{$DOMAIN} {
+	reverse_proxy ollama:11434
+}
+
+agent.{$DOMAIN} {
+	reverse_proxy claude-agent:3100
+}
+
 # ── Your Application ─────────────────────────
 
 # app.{$DOMAIN} {
