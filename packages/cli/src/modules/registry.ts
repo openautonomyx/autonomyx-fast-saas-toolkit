@@ -499,6 +499,26 @@ const claudeAgent: ModuleDefinition = {
   volumes: ["claude-agent-workspace:/workspace"],
 };
 
+const langfuse: ModuleDefinition = {
+  id: "langfuse",
+  name: "Langfuse",
+  description: "LLM observability — traces, evaluations, prompt management, cost tracking",
+  group: "ai",
+  defaultEnabled: false,
+  dependencies: ["postgres"],
+  image: "langfuse/langfuse:latest",
+  ports: { web: 3000 },
+  envVars: [
+    { key: "LANGFUSE_SECRET_KEY", description: "Langfuse encryption secret", secret: true, required: true },
+    { key: "LANGFUSE_SALT", description: "Langfuse password salt", secret: true, required: true },
+    { key: "LANGFUSE_TELEMETRY_ENABLED", description: "Disable telemetry", default: "false" },
+  ],
+  healthCheck: { path: "/api/public/health", port: 3000 },
+  pgDatabase: "langfuse",
+  caddyRoutes: [{ subdomain: "observe", target: "langfuse:3000" }],
+  volumes: [],
+};
+
 // ── Registry ──────────────────────────────────
 
 export const MODULE_REGISTRY: Record<string, ModuleDefinition> = {
@@ -523,6 +543,7 @@ export const MODULE_REGISTRY: Record<string, ModuleDefinition> = {
   langflow,
   ollama,
   "claude-agent": claudeAgent,
+  langfuse,
 };
 
 export const MODULE_GROUPS: Record<ModuleGroup, string[]> = {
@@ -530,7 +551,7 @@ export const MODULE_GROUPS: Record<ModuleGroup, string[]> = {
   core: ["logto", "lago", "rustfs"],
   ops: ["glitchtip", "uptime-kuma", "grafana-stack"],
   growth: ["matomo", "mautic", "stalwart", "nocodb", "n8n", "appsmith", "docmost", "posthog"],
-  ai: ["librechat", "langflow", "ollama", "claude-agent"],
+  ai: ["librechat", "langflow", "ollama", "claude-agent", "langfuse"],
 };
 
 export function getModule(id: string): ModuleDefinition | undefined {

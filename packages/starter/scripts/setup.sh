@@ -33,7 +33,7 @@ done
 echo ""
 echo "📦 Creating service databases..."
 
-DATABASES=(logto lago glitchtip nocodb n8n docmost mautic langflow)
+DATABASES=(logto lago glitchtip nocodb n8n docmost mautic langflow langfuse)
 
 for db in "${DATABASES[@]}"; do
   if docker compose exec -T postgres psql -U "$POSTGRES_USER" -lqt | cut -d \| -f 1 | grep -qw "$db"; then

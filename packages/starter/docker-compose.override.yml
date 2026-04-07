@@ -69,6 +69,10 @@ services:
     ports:
       - "3100:3100"
 
+  langfuse:
+    ports:
+      - "3900:3000"
+
   # Caddy in dev mode serves on localhost without HTTPS
   caddy:
     environment:

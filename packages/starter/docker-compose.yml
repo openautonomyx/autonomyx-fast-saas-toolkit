@@ -570,6 +570,27 @@ services:
       timeout: 5s
       retries: 5
 
+  langfuse:
+    <<: *common
+    image: langfuse/langfuse:latest
+    profiles: ["ai"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-saas}:${POSTGRES_PASSWORD}@postgres:5432/langfuse
+      NEXTAUTH_URL: https://observe.${DOMAIN}
+      NEXTAUTH_SECRET: ${LANGFUSE_SECRET_KEY}
+      SALT: ${LANGFUSE_SALT}
+      TELEMETRY_ENABLED: ${LANGFUSE_TELEMETRY_ENABLED:-false}
+      LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/public/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
 networks:
   saas-internal:
     driver: bridge

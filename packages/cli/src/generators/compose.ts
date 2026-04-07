@@ -254,6 +254,14 @@ function buildEnvironment(mod: ModuleDefinition): Record<string, string> {
       env.CLAUDE_AGENT_API_KEY = "${CLAUDE_AGENT_API_KEY}";
       env.PORT = "${CLAUDE_AGENT_PORT:-3100}";
       break;
+    case "langfuse":
+      env.DATABASE_URL = "postgresql://${POSTGRES_USER:-saas}:${POSTGRES_PASSWORD}@postgres:5432/langfuse";
+      env.NEXTAUTH_URL = "https://observe.${DOMAIN}";
+      env.NEXTAUTH_SECRET = "${LANGFUSE_SECRET_KEY}";
+      env.SALT = "${LANGFUSE_SALT}";
+      env.TELEMETRY_ENABLED = "${LANGFUSE_TELEMETRY_ENABLED:-false}";
+      env.LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES = "true";
+      break;
   }
 
   return env;

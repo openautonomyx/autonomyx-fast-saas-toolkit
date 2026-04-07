@@ -90,6 +90,10 @@ agent.{$DOMAIN} {
 	reverse_proxy claude-agent:3100
 }
 
+observe.{$DOMAIN} {
+	reverse_proxy langfuse:3000
+}
+
 # ── Your Application ─────────────────────────
 
 # app.{$DOMAIN} {
