@@ -1,0 +1,944 @@
+<!-- wp:heading {"level":1} -->
+<h1 class="wp-block-heading">Building the Autonomyx Fast SaaS Toolkit</h1>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><strong>A case study in how a single developer shipped a 22-module enterprise SaaS launchpad in ~25 commits</strong></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>Repository: <a href="https://github.com/openautonomyx/autonomyx-fast-saas-toolkit">openautonomyx/autonomyx-fast-saas-toolkit</a></li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li>Published: v0.2.0 on npm (<code>@autonomyx/fast-saas</code>, <code>@autonomyx/saas-middleware</code>)</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li>License: MIT</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">The Problem</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Every founding engineer starting a SaaS product hits the same wall: before you can write a single line of product code, you need auth, billing, storage, monitoring, error tracking, analytics, email, and a half-dozen other things that have nothing to do with your actual idea. The usual options are all bad:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>Vendor lock-in by default</strong> — Stitch together Stripe + Auth0 + Segment + Mixpanel + Sentry + SendGrid. You're paying $500/month before your first user signs up, and you can't walk away without a multi-week migration.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Roll your own</strong> — Spend 2-3 months writing auth, tenant isolation, rate limiting, usage tracking, and billing integration. None of it is your product, but all of it blocks your product.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Use a "SaaS in a box" framework</strong> — Accept whatever opinions the framework has baked in, hope they match your needs, rewrite half of it when they don't.</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>The Autonomyx Fast SaaS Toolkit takes a fourth path: <strong>bundle 22 battle-tested open-source tools into a pre-wired Docker Compose stack</strong>, then add a thin TypeScript middleware layer that makes them feel like one product. Pay zero vendor subscriptions, own your data, skip the months of plumbing, and keep the option to replace any single piece later without a rewrite.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>This case study documents how that toolkit came together — the architecture decisions, the trade-offs, the numbers, and the commit history. Everything here is verifiable against the repo.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">The Numbers</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>From <code>git log</code> and <code>find | wc -l</code> on the main branch:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table>
+<thead><tr>
+<th>Metric</th>
+<th>Value</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Commits on <code>main</code></td>
+<td>25</td>
+</tr>
+<tr>
+<td>Total lines (code + docs + config)</td>
+<td>~10,700</td>
+</tr>
+<tr>
+<td>TypeScript/TSX lines across 5 packages</td>
+<td>~5,400</td>
+</tr>
+<tr>
+<td>Docker services defined in compose</td>
+<td>60 service blocks (25 runtime containers across 5 profile groups)</td>
+</tr>
+<tr>
+<td>Caddy reverse proxy routes</td>
+<td>22 subdomains</td>
+</tr>
+<tr>
+<td>SQL migrations</td>
+<td>5</td>
+</tr>
+<tr>
+<td>n8n automation workflows (pre-built)</td>
+<td>6</td>
+</tr>
+<tr>
+<td>Grafana dashboards (pre-built)</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Prometheus alert rules</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Documentation files</td>
+<td>15</td>
+</tr>
+<tr>
+<td>Published npm packages</td>
+<td>2 (<code>@autonomyx/fast-saas</code>, <code>@autonomyx/saas-middleware</code>)</td>
+</tr>
+<tr>
+<td>GitHub releases</td>
+<td>3 (v0.1.0, v0.1.1, v0.2.0)</td>
+</tr>
+</tbody>
+</table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>The TypeScript breakdown by package:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table>
+<thead><tr>
+<th>Package</th>
+<th>Lines</th>
+<th>Purpose</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>packages/cli</code></td>
+<td>2,167</td>
+<td>CLI scaffolding tool with 9 commands, 22-module registry, 3 generators</td>
+</tr>
+<tr>
+<td><code>packages/api</code></td>
+<td>970</td>
+<td>Express REST API with 38 endpoints across 9 routers</td>
+</tr>
+<tr>
+<td><code>packages/mcp</code></td>
+<td>840</td>
+<td>Model Context Protocol server exposing 44 tools to Claude</td>
+</tr>
+<tr>
+<td><code>packages/dashboard</code></td>
+<td>835</td>
+<td>Next.js 15 command center with Carbon Design System</td>
+</tr>
+<tr>
+<td><code>packages/starter/middleware</code></td>
+<td>552</td>
+<td>Multi-tenancy middleware (auth, rate limit, usage, feature flags)</td>
+</tr>
+</tbody>
+</table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>Roughly 5,400 lines of TypeScript for a system that orchestrates 22 services, exposes 38 HTTP endpoints, publishes 2 npm packages, and ships a full Next.js dashboard. The leanness comes from <strong>not building what already exists</strong> — each service is an upstream OSS project, and the middleware glues them together rather than reimplementing them.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Architecture: The 5-Layer Model</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The toolkit organizes everything into five Docker Compose profile groups. Each layer is independently deployable — teams can start with Essential+Core and add Ops, Growth, or AI as they grow.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">Layer 1: Essential (always on)</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The three services every SaaS product needs regardless of stack:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>PostgreSQL 16</strong> — shared database for almost everything</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Redis 7</strong> — cache, session store, rate limit window, usage tracker buffer</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Caddy</strong> — reverse proxy with automatic HTTPS via Let's Encrypt</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>Three services, three containers, zero vendor accounts. Caddy's automatic HTTPS is the unsung hero here: add a subdomain to the Caddyfile, and Caddy provisions a certificate from Let's Encrypt without any human intervention. No cert renewal cron jobs, no nginx config hell.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">Layer 2: Core (default on)</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The four services that define "this is a SaaS product":</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>Logto</strong> — authentication, SSO, RBAC, multi-tenant organizations</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Lago</strong> — usage-based billing and subscription management</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>RustFS</strong> — S3-compatible object storage (MinIO fork in Rust, lighter on memory)</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>SaaS API</strong> (custom) — Express.js REST API exposing 38 endpoints</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>The SaaS API is the only custom service in the Core layer — everything else is upstream OSS. The API's job is to expose a coherent HTTP interface over the toolkit's data model (tenants, users, memberships, API keys, usage events) and to proxy AI service operations. It uses the multi-tenancy middleware internally.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Decision:</strong> Build the API with raw Express + <code>pg</code> + <code>ioredis</code>, no ORM. The data model is simple (5 tables) and SQL is more auditable than ORM-generated queries. At 970 lines, the whole API is one afternoon of reading.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">Layer 3: Ops (default on)</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Everything needed to keep the system healthy without babysitting:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>GlitchTip</strong> — Sentry-compatible error tracking (same SDK, OSS license)</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Uptime Kuma</strong> — uptime monitoring and public status page</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Grafana + Prometheus + Loki</strong> — metrics, dashboards, log aggregation</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>Four Grafana dashboards ship pre-provisioned: SaaS Overview, Tenant Usage, Infrastructure, Billing. Ten Prometheus alert rules cover the basics (ServiceDown, HighErrorRate, HighLatency, HighCPU, HighMemory, DiskSpaceLow, PostgresConnectionsHigh, RedisMemoryHigh, TenantOverLimit, BillingWebhookFailure).</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Decision:</strong> Ship dashboards as JSON, not as a Helm chart or a "run this import script" step. Grafana's file-based provisioning picks them up on startup. Zero-click configuration.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">Layer 4: Growth (opt-in)</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Eight services that matter once you have users but don't matter before you do:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>Matomo</strong> — GDPR-compliant web analytics (self-hosted Google Analytics replacement)</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>PostHog</strong> — product analytics, feature flags, session replay</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Mautic</strong> — email marketing automation</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Stalwart</strong> — full SMTP/IMAP mail server for transactional email</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>NocoDB</strong> — admin dashboard (spreadsheet-over-PostgreSQL)</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>n8n</strong> — workflow automation, like Zapier but self-hosted</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Appsmith</strong> — low-code internal tool builder</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Docmost</strong> — knowledge base and documentation</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>Six n8n workflows ship pre-built: welcome email, usage alert, error alert, daily backup, billing sync, and a 3-day onboarding drip campaign. Each is a single JSON file that n8n imports on first run.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Decision:</strong> Keep Growth opt-in via Docker Compose profiles. A new SaaS doesn't need Matomo on day one. <code>COMPOSE_PROFILES=essential,core,ops</code> brings up the minimum; <code>COMPOSE_PROFILES=essential,core,ops,growth</code> adds everything. Same compose file, different startup command.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">Layer 5: AI (opt-in)</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The next-gen layer, added after the initial 4-layer stack was working:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>LibreChat</strong> — multi-model AI chat with MongoDB + Meilisearch sidecars</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Langflow</strong> — visual LLM workflow builder</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Ollama</strong> — local LLM runtime (Llama, Mistral, Gemma, CodeLlama)</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Claude Agent</strong> — containerized Claude Code runner with async HTTP API</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Langfuse</strong> — LLM observability, tracing, and cost tracking</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p><strong>Decision:</strong> LibreChat needs MongoDB (not PostgreSQL), so it gets a sidecar container. This broke the "everything uses shared Postgres" rule, but LibreChat is the only exception and the alternative (fork LibreChat to use Postgres) is much more work than accepting one extra container.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Decision:</strong> The Claude Agent Runner is a thin Express wrapper around the <code>claude</code> CLI that exposes <code>POST /run</code> → async job → <code>GET /jobs/:id</code>. Any service can trigger a Claude Code session via HTTP. This turns Claude Code from a developer tool into <strong>an operator</strong> — n8n workflows can ask it to modify code on demand.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">The Three Interfaces</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Once the 22 services are running, users need ways to interact with them. The toolkit ships three:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">1. CLI — <code>@autonomyx/fast-saas</code></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>A 2,167-line TypeScript CLI built with Commander.js + <code>@inquirer/prompts</code>. Nine commands:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table>
+<thead><tr>
+<th>Command</th>
+<th>Purpose</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>fast-saas init [name]</code></td>
+<td>Interactive project scaffold — pick modules, generate compose/env/caddy</td>
+</tr>
+<tr>
+<td><code>fast-saas catalog</code></td>
+<td>List all 22 modules across 5 profile groups</td>
+</tr>
+<tr>
+<td><code>fast-saas add &lt;module&gt;</code></td>
+<td>Add a module to an existing project, auto-resolves dependencies</td>
+</tr>
+<tr>
+<td><code>fast-saas remove &lt;module&gt;</code></td>
+<td>Remove a module, checks for dependents</td>
+</tr>
+<tr>
+<td><code>fast-saas up [--detach]</code></td>
+<td>Start services</td>
+</tr>
+<tr>
+<td><code>fast-saas down</code></td>
+<td>Stop services</td>
+</tr>
+<tr>
+<td><code>fast-saas health</code></td>
+<td>Status table for all running services</td>
+</tr>
+<tr>
+<td><code>fast-saas env [--regen]</code></td>
+<td>Validate or regenerate <code>.env</code> secrets</td>
+</tr>
+<tr>
+<td><code>fast-saas deploy</code></td>
+<td>Deploy to Coolify (optional)</td>
+</tr>
+</tbody>
+</table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>The CLI's <code>ModuleDefinition</code> interface is the heart of the system. Every service is a single object with its Docker image, ports, env vars, dependencies, health check, Caddy routes, and optional sidecars. Three generators (<code>compose.ts</code>, <code>caddy.ts</code>, <code>env.ts</code>) read the registry and produce the actual config files.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Decision:</strong> Use a registry pattern instead of Handlebars templates. Templates seemed cleaner at first, but the generators needed too much conditional logic (does this service use the shared PG? does it have a sidecar? does it need a specific env var format?). TypeScript switch statements with typed <code>ModuleDefinition</code> objects are easier to audit and harder to break than nested Handlebars helpers.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">2. REST API — <code>@autonomyx/api</code></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>A 970-line Express server exposing <strong>38 endpoints across 9 routers</strong>:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table>
+<thead><tr>
+<th>Router</th>
+<th>Endpoints</th>
+<th>Purpose</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>/health</code></td>
+<td>1</td>
+<td>PostgreSQL + Redis liveness</td>
+</tr>
+<tr>
+<td><code>/api/v1/plans</code></td>
+<td>2</td>
+<td>Plan definitions + feature checks</td>
+</tr>
+<tr>
+<td><code>/api/v1/tenants</code></td>
+<td>6</td>
+<td>Full CRUD + plan changes</td>
+</tr>
+<tr>
+<td><code>/api/v1/users</code></td>
+<td>4</td>
+<td>User CRUD</td>
+</tr>
+<tr>
+<td><code>/api/v1/tenants/:id/members</code></td>
+<td>4</td>
+<td>Team membership management</td>
+</tr>
+<tr>
+<td><code>/api/v1/tenants/:id/api-keys</code></td>
+<td>3</td>
+<td>API key creation/revocation (bcrypt-hashed)</td>
+</tr>
+<tr>
+<td><code>/api/v1/tenants/:id/usage</code></td>
+<td>2</td>
+<td>Usage summary and raw events</td>
+</tr>
+<tr>
+<td><code>/api/v1/admin</code></td>
+<td>2</td>
+<td>Platform stats and module list</td>
+</tr>
+<tr>
+<td><code>/api/v1/ai</code></td>
+<td>14</td>
+<td>Ollama, Langflow, Claude Agent, Langfuse proxies</td>
+</tr>
+</tbody>
+</table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>Auth is dual-mode: Logto JWTs for user-facing operations, platform API keys (<code>pk_</code> prefix) for admin access. The AI routes proxy to internal Docker services — no extra credentials needed since all traffic is inside the <code>saas-internal</code> Docker bridge network.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Decision:</strong> Handle all AI service operations through the SaaS API rather than exposing each AI service's admin interface directly. This gives a single auth boundary, single rate limit, and single usage tracking path for all operations. The user's Claude skill only needs to know about one API.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">3. Dashboard — Next.js 15 + IBM Carbon Design System</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The most opinionated piece of the toolkit: a Next.js 15 command center with Server Components, IBM Carbon Design System tokens, and hand-built primitives.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The dashboard went through a late rebrand. The first version used a dark theme with Fraunces + DM Sans fonts and purple/green accents. It looked fine but felt like "another startup dashboard." The rebrand replaces it with IBM's Carbon Design System v11 — sharp corners, Gray 100 ramp, Blue 60 primary, IBM Plex Sans + IBM Plex Mono fonts. The same visual language IBM uses for Cloud, Watson, and Think.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>The critical decision was whether to use <code>@carbon/react</code> or hand-build the primitives.</strong> <code>@carbon/react</code> would give 60+ components for free but add ~500 KB to the bundle. The toolkit needed 6 components (Shell, Button, TextInput, Modal, DataTable, StatTile). Hand-building them against the Carbon spec took ~480 lines and kept the First Load JS at <strong>102 KB</strong> — about the same as the pre-rebrand version.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Carbon tokens are declared in <code>globals.css</code> using Tailwind v4's <code>@theme</code> directive, which exposes them as both Tailwind utility classes and raw CSS custom properties. The whole design system is one CSS file plus six component files.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The dashboard layout follows Carbon's UI Shell pattern exactly: 48-pixel black header with the Autonomyx wordmark, 256-pixel white side nav with seven menu items (three active, four placeholders for future pages), light gray content area. The overview page shows a 4-up stats grid (Tenants / Users / API Calls / Services Up) and a Carbon DataTable with all 22 services grouped by layer.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Build output: <strong>3-second compile, 102 KB First Load JS, 4 static pages generated cleanly</strong>. For a system with a full design system, admin shell, and Server Component data fetching, that's lean.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Multi-Tenancy Middleware: The Unseen Hero</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The 552-line <code>@autonomyx/saas-middleware</code> package is the piece that makes the whole toolkit feel like one product. Six modules, each ~100 lines:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table>
+<thead><tr>
+<th>Module</th>
+<th>What it does</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>auth-guard.ts</code></td>
+<td>Validates Logto JWTs via JWKS, supports <code>sk_</code>-prefixed API keys</td>
+</tr>
+<tr>
+<td><code>tenant-context.ts</code></td>
+<td>Resolves tenant from JWT claims, loads plan and settings from DB</td>
+</tr>
+<tr>
+<td><code>rate-limiter.ts</code></td>
+<td>Per-tenant sliding-window via Redis sorted sets</td>
+</tr>
+<tr>
+<td><code>usage-tracker.ts</code></td>
+<td>Buffers API events in Redis, flushes to PostgreSQL + Lago</td>
+</tr>
+<tr>
+<td><code>feature-flags.ts</code></td>
+<td>Plan-based gating (free/starter/pro/enterprise)</td>
+</tr>
+<tr>
+<td><code>health.ts</code></td>
+<td>PostgreSQL + Redis health check endpoint</td>
+</tr>
+</tbody>
+</table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>Every request to the SaaS API flows through this chain: auth → tenant context → rate limiter → usage tracker → route handler. The usage tracker is particularly interesting — it buffers events in Redis via <code>RPUSH</code> (O(1), non-blocking), then a background worker flushes batches of 500 events to PostgreSQL and forwards them to Lago every 30 seconds. This gives per-tenant billing without adding latency to hot-path requests.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Decision:</strong> Row-level tenant isolation via a <code>tenant_id</code> column on every tenant-scoped table. Schema-per-tenant would be more secure but dramatically more expensive at scale and harder to migrate. Row-level covers 90% of SaaS use cases and costs essentially nothing.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">The MCP Server: Making Claude an Operator</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The <code>@autonomyx/mcp-fast-saas</code> package exposes <strong>44 Model Context Protocol tools</strong> to Claude Code:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table>
+<thead><tr>
+<th>Tool group</th>
+<th>Count</th>
+<th>Examples</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Tenant management</td>
+<td>6</td>
+<td>create_tenant, list_tenants, change_plan</td>
+</tr>
+<tr>
+<td>User management</td>
+<td>4</td>
+<td>create_user, get_user, update_user</td>
+</tr>
+<tr>
+<td>Member management</td>
+<td>4</td>
+<td>add_member, remove_member, update_member</td>
+</tr>
+<tr>
+<td>API key management</td>
+<td>3</td>
+<td>create_api_key, revoke_api_key, rotate_api_key</td>
+</tr>
+<tr>
+<td>Usage and billing</td>
+<td>2</td>
+<td>get_usage, check_usage_limit</td>
+</tr>
+<tr>
+<td>Plan and features</td>
+<td>2</td>
+<td>list_plans, check_feature</td>
+</tr>
+<tr>
+<td>System and admin</td>
+<td>3</td>
+<td>health, platform_stats, list_modules</td>
+</tr>
+<tr>
+<td>Convenience tools</td>
+<td>6</td>
+<td>get_tenant_overview, suspend_tenant, reactivate_tenant</td>
+</tr>
+<tr>
+<td>Ollama</td>
+<td>5</td>
+<td>list_models, pull_model, generate, chat, delete_model</td>
+</tr>
+<tr>
+<td>Langflow</td>
+<td>4</td>
+<td>list_flows, get_flow, run_flow, list_components</td>
+</tr>
+<tr>
+<td>Claude Agent</td>
+<td>3</td>
+<td>run, get_job, list_jobs</td>
+</tr>
+<tr>
+<td>AI system</td>
+<td>2</td>
+<td>ai_health, langfuse_health</td>
+</tr>
+</tbody>
+</table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>Each tool is a thin wrapper that proxies to the REST API. Claude doesn't need credentials for each service — it authenticates once to the SaaS API with a platform key, and the API handles the rest.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Decision:</strong> Wrap the REST API instead of talking to PostgreSQL directly from the MCP server. This keeps authentication, rate limiting, and usage tracking in one place. The MCP server can run on a different machine (Claude Code's local environment) while the API runs in Docker. The downside is one extra network hop; the upside is zero drift between the API and MCP surfaces — they're always consistent by construction.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Lessons Learned</h2>
+<!-- /wp:heading -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">1. The registry pattern beats templates for config generation</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The CLI's first draft used Handlebars templates. It worked but every small change (add a sidecar, change an env var format, handle a special case) required touching both a <code>.hbs</code> template and a generator function. Replacing templates with TypeScript objects and switch statements halved the code and eliminated a class of bugs where template logic and generator logic drifted apart.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">2. Profile groups beat multiple compose files</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Docker Compose supports <code>--profile</code> flags that selectively enable services. The alternative — separate <code>docker-compose.yml</code>, <code>docker-compose.ops.yml</code>, <code>docker-compose.growth.yml</code> files merged with <code>-f</code> flags — seemed cleaner at first but became unmanageable. A single compose file with profile-tagged services means there's one source of truth, one env file, and one <code>docker compose up</code> command. The CLI generates the correct <code>COMPOSE_PROFILES</code> value in <code>.env</code> based on which modules the user selected.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">3. Open SMTP config beats hardcoded mail server</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>An early version of the toolkit hardcoded Stalwart as the SMTP server. When users wanted to use SendGrid or Mailgun instead, they had to edit the service definitions. The fix was simple: provide <code>SMTP_HOST</code>, <code>SMTP_PORT</code>, <code>SMTP_USER</code>, <code>SMTP_PASSWORD</code> env vars that default to the internal Stalwart container. Change four env vars and the whole toolkit uses SendGrid instead. One commit: <code>feat: Add open SMTP config to AI layer services</code>.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">4. The E2E test catches the bugs the code review doesn't</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The first local end-to-end test of the Docker Compose stack surfaced three bugs the code review missed:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>Logto failed to start on first run</strong> because it needs <code>npx @logto/cli db seed --swe</code> before the server can boot. The setup script now runs the seed automatically.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>RustFS health check returned 403</strong> (auth required) instead of 200, which Docker interpreted as unhealthy. Fixed by accepting both 200 and 403 as "alive".</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Logto port 3001 conflicted with Uptime Kuma</strong>. The host ports changed from 3001/3002 to 3301/3302.</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>None of these bugs would have been caught by code review or unit tests. They required actually running the compose stack on a Mac with Docker Desktop. One commit bundled all three fixes: <code>fix: E2E test findings — Logto seed, RustFS health, port conflicts</code>.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">5. Hand-build primitives for small design systems</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Choosing to hand-build Carbon primitives instead of using <code>@carbon/react</code> was a surprising win. The toolkit's dashboard needs six components. <code>@carbon/react</code> provides sixty. Taking the 500 KB dependency to use 10% of its surface area is a bad trade, especially when the Carbon spec is published openly and the primitives are straightforward HTML + Tailwind. The result is a dashboard that loads in 102 KB First Load JS while matching Carbon visually.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">6. Ship documentation as code</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The toolkit ships 15 documentation files in <code>docs/</code> — quick start, architecture, CLI reference, module guides, deployment, security, troubleshooting, plus three business templates (launch checklist, pricing page, investor metrics). All are committed to the repo alongside the code. When the code changes, the docs change in the same commit. When someone reads a commit history to understand why a decision was made, the decision is in the commit message and the long-form rationale is in the corresponding doc file.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">7. Publish early, iterate in public</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The toolkit went through three releases in quick succession: v0.1.0 (initial), v0.1.1 (E2E fixes), v0.2.0 (AI layer + API + MCP + dashboard rebrand). Each release went out on npm as soon as it was working, even if some features weren't complete. npm's semver convention makes this safe — users who pin <code>0.1.x</code> don't get AI layer breaking changes until they explicitly upgrade.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">What's in a Commit</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The full commit history reads as a story. Here's every commit on <code>main</code>, grouped by phase:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Phase 1-2: Foundation (2 commits)</strong></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><code>191773a</code> Initial commit</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>40cec1e</code> Phase 1 foundation — Docker Compose stack with 17 OSS services</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p><strong>Phase 3-6: Building up (4 commits)</strong></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><code>205d40d</code> Phase 2 — CLI scaffolding tool (@autonomyx/fast-saas)</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>3bbc1e0</code> Phase 3 — Ops + Growth module configs, dashboards, workflows, alerting</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>a50eca1</code> Phase 4 — Claude Code skill with 5 operating modes</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>f75450c</code> Phase 5 — Complete documentation suite (15 files)</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p><strong>E2E validation and release prep (3 commits)</strong></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><code>969d8be</code> Phase 6 — CI/CD, npm publish config, README polish, type fixes</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>9eef78e</code> fix: E2E test findings — Logto seed, RustFS health, port conflicts</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>9bc0ad6</code> feat: REST API (24 endpoints) + MCP server (30 tools)</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p><strong>AI layer added (4 commits)</strong></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><code>964cbbe</code> feat: Next-gen AI layer — LibreChat, Langflow, Ollama, Claude Agent</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>827b0c2</code> feat: Add Langfuse LLM observability to AI layer</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>9daf383</code> feat: Add open SMTP config to AI layer services</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>caa05b6</code> feat: AI API routes (14 endpoints) + MCP tools (14 tools)</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p><strong>Documentation and release (4 commits)</strong></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><code>d48295f</code> docs: Complete GitHub documentation refresh</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>f77583c</code> docs: Add GitHub Sponsors + funding configuration</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>843d5b9</code> feat: Update Claude skill with AI layer, 44 MCP tools, updated module registry</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>3b0976a</code> chore: Bump all package versions to 0.2.0</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p><strong>Production hardening (2 commits)</strong></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><code>f9c14ce</code> fix: Remove profiles from essential services (postgres, redis, caddy)</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>72e3f89</code> fix: E2E test findings — Langflow volume, profiles, ports</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p><strong>Dashboard build and Carbon rebrand (5 commits)</strong></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><code>b9b323a</code> feat: Next.js command center dashboard</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>377a42c</code> chore: gitignore Next.js build artifacts and local config</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>cc34c09</code> feat(dashboard): adopt IBM Carbon Design System tokens and fonts</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>e3aafd5</code> feat(dashboard): hand-built Carbon primitives (no Carbon React dep)</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>6b36b1a</code> refactor(dashboard): convert overview to Carbon DataTable pattern</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>5ac774c</code> chore: gitignore TypeScript incremental build cache</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>25 commits. Every feature phase is one or two commits. Every bug fix references the symptom it fixes. Every documentation update is its own commit. Commit messages are written for the reader, not the author — someone landing on <code>caa05b6</code> can learn what the commit does and why without opening the code.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">What It Doesn't Do</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Every case study should be honest about what's missing. The Fast SaaS Toolkit <strong>does not</strong>:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>Process payments</strong>. Lago is a billing engine, not a payment processor. It delegates card operations to Stripe, GoCardless, or Adyen. If you want Lago to charge a card, you still need a Stripe account.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Provide a tenant-signup UI</strong>. The toolkit has tenant CRUD endpoints but no React signup form. Your product owns that page. The toolkit just gives you the backend to talk to.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Handle Kubernetes</strong>. The whole stack is Docker Compose. Scaling beyond a single server requires migrating to K8s, which is out of scope. The toolkit is optimized for the first 1,000 tenants, not the first 1,000,000.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Replace your application code</strong>. This is infrastructure. You still have to build the product that lives inside it.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Solve the compliance problem</strong>. SOC 2, HIPAA, GDPR — the toolkit gives you the technical primitives (audit logs, encryption at rest, data residency controls) but the paperwork and process are still yours.</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>These are not bugs. They're scope decisions. Attempting any of them would have doubled the codebase and blurred the toolkit's purpose.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">The Numbers, Revisited</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>After 25 commits, two npm packages published, and one complete Carbon rebrand, the toolkit lands at:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>22 modules</strong> across 5 Docker Compose profile groups</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>25 runtime containers</strong> with full health checks and dependency ordering</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>38 REST API endpoints</strong> across 9 routers</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>44 MCP tools</strong> exposing the API surface to Claude</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>22 Caddy reverse proxy subdomains</strong> with automatic HTTPS</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>5 SQL migrations</strong> defining the tenant data model</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>6 n8n workflows</strong> shipped ready-to-import</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>4 Grafana dashboards</strong> with 10 Prometheus alert rules</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>15 documentation files</strong> from quick start to troubleshooting</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>5 packages</strong> (<code>api</code>, <code>cli</code>, <code>mcp</code>, <code>dashboard</code>, <code>starter/middleware</code>)</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>~10,700 total lines</strong> of code, config, and documentation</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>102 KB First Load JS</strong> for the Carbon-branded dashboard</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>3 second</strong> Next.js build time</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>A single developer shipped all of it in 25 commits over roughly two weeks of focused work. The framework was never "here's a 50-person team with a Carbon Design System budget" — it was "pair with Claude Code, make decisions fast, ship when it works."</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Where to Go Next</h2>
+<!-- /wp:heading -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>Repository</strong>: <a href="https://github.com/openautonomyx/autonomyx-fast-saas-toolkit">github.com/openautonomyx/autonomyx-fast-saas-toolkit</a></li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Install the CLI</strong>: <code>npm install -g @autonomyx/fast-saas</code></li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Scaffold a project</strong>: <code>fast-saas init my-saas</code></li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Read the architecture doc</strong>: <a href="../docs/architecture.md">docs/architecture.md</a></li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Read the deployment guide</strong>: <a href="../docs/deployment.md">docs/deployment.md</a></li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Sponsor the project</strong>: <a href="https://github.com/sponsors/openautonomyx">github.com/sponsors/openautonomyx</a></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>The toolkit is MIT licensed. Fork it, strip the parts you don't need, add the parts you do. The whole point is to give you a running start without locking you into anyone's opinions — including the toolkit's own.</p>
+<!-- /wp:paragraph -->
