@@ -6,3 +6,13 @@ dist/
 .DS_Store
 coverage/
 .turbo/
+
+# Next.js build artifacts
+.next/
+next-env.d.ts
+
+# Claude Code project config (not for version control)
+.claude/
+
+# Cloned sibling repos (kept next to toolkit for dev convenience)
+autonomyx-fast-saas-landing/
