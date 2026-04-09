@@ -11,6 +11,9 @@ coverage/
 .next/
 next-env.d.ts
 
+# TypeScript incremental build cache
+*.tsbuildinfo
+
 # Claude Code project config (not for version control)
 .claude/
 
