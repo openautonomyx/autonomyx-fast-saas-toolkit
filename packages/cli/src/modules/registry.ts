@@ -185,6 +185,48 @@ const rustfs: ModuleDefinition = {
   volumes: ["rustfs-data:/data"],
 };
 
+const dashboard: ModuleDefinition = {
+  id: "dashboard",
+  name: "Command Center",
+  description:
+    "Next.js + Carbon UI front door for the entire stack. Manages tenants, users, billing, workflows, AI, and monitoring through one authenticated interface. Users never touch the headless backends directly.",
+  group: "core",
+  defaultEnabled: true,
+  dependencies: ["postgres", "logto"],
+  image: "local:dashboard", // built from packages/dashboard
+  ports: { web: 3200 },
+  envVars: [
+    {
+      key: "LOGTO_ADMIN_USER",
+      description: "Logto admin username (used by dashboard-init bootstrap)",
+      default: "admin",
+    },
+    {
+      key: "LOGTO_ADMIN_PASSWORD",
+      description: "Logto admin password (used by dashboard-init bootstrap)",
+      secret: true,
+      required: true,
+    },
+    {
+      key: "LOGTO_APP_ID",
+      description: "OIDC client ID (auto-populated by dashboard-init on first boot)",
+    },
+    {
+      key: "LOGTO_APP_SECRET",
+      description: "OIDC client secret (auto-populated by dashboard-init on first boot)",
+    },
+    {
+      key: "LOGTO_COOKIE_SECRET",
+      description: "32+ byte random hex used to encrypt session cookies",
+      secret: true,
+      required: true,
+    },
+  ],
+  healthCheck: { path: "/", port: 3200 },
+  caddyRoutes: [{ subdomain: "app", target: "dashboard:3200" }],
+  volumes: ["dashboard-bootstrap:/bootstrap:ro"],
+};
+
 // ── Ops Modules ───────────────────────────────
 
 const glitchtip: ModuleDefinition = {
@@ -528,6 +570,7 @@ export const MODULE_REGISTRY: Record<string, ModuleDefinition> = {
   logto,
   lago,
   rustfs,
+  dashboard,
   glitchtip,
   "uptime-kuma": uptimeKuma,
   "grafana-stack": grafanaStack,
@@ -548,7 +591,7 @@ export const MODULE_REGISTRY: Record<string, ModuleDefinition> = {
 
 export const MODULE_GROUPS: Record<ModuleGroup, string[]> = {
   essential: ["postgres", "redis", "caddy"],
-  core: ["logto", "lago", "rustfs"],
+  core: ["logto", "lago", "rustfs", "dashboard"],
   ops: ["glitchtip", "uptime-kuma", "grafana-stack"],
   growth: ["matomo", "mautic", "stalwart", "nocodb", "n8n", "appsmith", "docmost", "posthog"],
   ai: ["librechat", "langflow", "ollama", "claude-agent", "langfuse"],

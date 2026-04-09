@@ -32,7 +32,12 @@ api.{$DOMAIN} {
 	reverse_proxy saas-api:4000
 }
 
-dashboard.{$DOMAIN} {
+# The command center — primary user-facing front door.
+# All admin operations (tenants, users, billing, workflows, AI, monitoring)
+# happen here. Logto authenticates; the dashboard forwards session tokens
+# to the API. Other subdomains (auth.*, billing.*, etc.) are the headless
+# backends and should rarely be touched directly by end users.
+app.{$DOMAIN} {
 	reverse_proxy dashboard:3200
 }
 
@@ -99,7 +104,10 @@ observe.{$DOMAIN} {
 }
 
 # ── Your Application ─────────────────────────
-
-# app.{$DOMAIN} {
-# 	reverse_proxy your-app:PORT
+# The dashboard at app.{$DOMAIN} (declared above) is the primary front door.
+# Add custom application subdomains here — e.g. if you build a storefront
+# that lives at shop.{$DOMAIN} pointed at a storefront container:
+#
+# shop.{$DOMAIN} {
+# 	reverse_proxy storefront:3000
 # }

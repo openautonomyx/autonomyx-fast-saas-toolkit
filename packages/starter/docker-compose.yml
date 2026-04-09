@@ -153,17 +153,65 @@ services:
       dockerfile: Dockerfile
     profiles: ["core"]
     environment:
+      # API backend — internal DNS name on the saas-internal network
       API_URL: http://saas-api:4000
-      DOMAIN: ${DOMAIN}
-      API_KEY: ${PLATFORM_API_KEY}
+      # Fallback platform API key for server-to-server calls. Used by
+      # src/lib/api.ts when there's no Logto session (e.g. build-time
+      # data fetching). The Logto session token takes priority.
+      PLATFORM_API_KEY: ${PLATFORM_API_KEY}
+      # Public domain for subdomain interpolation in the command center
+      NEXT_PUBLIC_DOMAIN: ${DOMAIN}
+      # ── Logto OIDC client config (read by src/lib/logto.ts) ──
+      # Endpoint is Logto's public URL (users redirect here to sign in)
+      LOGTO_ENDPOINT: https://auth.${DOMAIN}
+      # Client ID + secret populated by dashboard-init bootstrap container
+      # on first boot via Logto's Management API, then written to a shared
+      # volume. For deployments that register the OIDC app manually, set
+      # these in .env and the bootstrap is a no-op.
+      LOGTO_APP_ID: ${LOGTO_APP_ID:-}
+      LOGTO_APP_SECRET: ${LOGTO_APP_SECRET:-}
+      # The dashboard's own public URL — where Logto redirects back after login
+      LOGTO_BASE_URL: https://app.${DOMAIN}
+      # 32+ byte secret for encrypting the session cookie
+      LOGTO_COOKIE_SECRET: ${LOGTO_COOKIE_SECRET}
+      # API resource identifier — must match LOGTO_AUDIENCE on the saas-api service
+      LOGTO_API_RESOURCE: https://api.${DOMAIN}
+      # Ensure production mode (enables cookieSecure)
+      NODE_ENV: production
     depends_on:
       saas-api:
         condition: service_healthy
+      logto:
+        condition: service_healthy
+      dashboard-init:
+        condition: service_completed_successfully
+    volumes:
+      # Shared with dashboard-init so the bootstrap can drop the Logto
+      # client credentials into a file the dashboard entrypoint reads
+      - dashboard-bootstrap:/bootstrap:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3200 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
+
+  dashboard-init:
+    <<: *common
+    image: curlimages/curl:8.11.0
+    profiles: ["core"]
+    depends_on:
+      logto:
+        condition: service_healthy
+    environment:
+      LOGTO_ENDPOINT: http://logto:3001
+      LOGTO_ADMIN_USER: ${LOGTO_ADMIN_USER:-admin}
+      LOGTO_ADMIN_PASSWORD: ${LOGTO_ADMIN_PASSWORD}
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - dashboard-bootstrap:/bootstrap
+      - ./services/dashboard-init:/scripts:ro
+    entrypoint: ["/bin/sh", "/scripts/bootstrap.sh"]
+    restart: "no"
 
   saas-api:
     <<: *common
@@ -648,3 +696,4 @@ volumes:
   librechat-uploads:
   librechat-logs:
   claude-agent-workspace:
+  dashboard-bootstrap:
