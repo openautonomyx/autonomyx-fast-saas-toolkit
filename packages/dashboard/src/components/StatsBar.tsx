@@ -1,24 +1,6 @@
-interface StatProps {
-  label: string;
-  value: string | number;
-  color?: string;
-}
+import { StatTile } from "./StatTile";
 
-function Stat({ label, value, color }: StatProps) {
-  return (
-    <div className="bg-[--color-surface] border border-[--color-border] rounded-xl p-5 text-center">
-      <div
-        className="text-3xl font-bold mb-1"
-        style={{ fontFamily: "var(--font-heading)", color: color || "var(--color-green)" }}
-      >
-        {value}
-      </div>
-      <div className="text-sm text-[--color-text-dim]">{label}</div>
-    </div>
-  );
-}
-
-interface StatsBarProps {
+interface Props {
   tenants: number;
   users: number;
   apiCalls: number;
@@ -26,16 +8,22 @@ interface StatsBarProps {
   servicesTotal: number;
 }
 
-export function StatsBar({ tenants, users, apiCalls, servicesUp, servicesTotal }: StatsBarProps) {
+export function StatsBar({ tenants, users, apiCalls, servicesUp, servicesTotal }: Props) {
+  const allHealthy = servicesUp === servicesTotal;
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-      <Stat label="Tenants" value={tenants} color="var(--color-purple)" />
-      <Stat label="Users" value={users} color="var(--color-blue)" />
-      <Stat label="API Calls (30d)" value={apiCalls.toLocaleString()} color="var(--color-green)" />
-      <Stat
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-[#e0e0e0] mb-8">
+      <StatTile label="Tenants" value={tenants} caption="active" />
+      <StatTile label="Users" value={users} caption="total" />
+      <StatTile
+        label="API Calls"
+        value={apiCalls.toLocaleString()}
+        caption="last 30 days"
+      />
+      <StatTile
         label="Services"
-        value={`${servicesUp}/${servicesTotal}`}
-        color={servicesUp === servicesTotal ? "var(--color-green)" : "var(--color-amber)"}
+        value={`${servicesUp} / ${servicesTotal}`}
+        trend={allHealthy ? "up" : "flat"}
+        trendValue={allHealthy ? "all healthy" : `${servicesTotal - servicesUp} down`}
       />
     </div>
   );

@@ -15,7 +15,8 @@ async function getStats() {
     const data = await api("/api/v1/admin/stats");
     const tenants = data.data?.tenants?.reduce((sum: number, t: any) => sum + parseInt(t.count), 0) || 0;
     const users = data.data?.users?.total || 0;
-    const apiCalls = data.data?.usage_last_30d?.reduce((sum: number, e: any) => sum + parseInt(e.count), 0) || 0;
+    const apiCalls =
+      data.data?.usage_last_30d?.reduce((sum: number, e: any) => sum + parseInt(e.count), 0) || 0;
     return { tenants, users, apiCalls };
   } catch {
     return { tenants: 0, users: 0, apiCalls: 0 };
@@ -23,9 +24,9 @@ async function getStats() {
 }
 
 async function getHealthStatuses() {
-  const statuses: Array<{ id: string; status: "healthy" | "unhealthy" | "unknown"; latencyMs?: number }> = [];
+  const statuses: Array<{ id: string; status: "healthy" | "unhealthy" | "unknown"; latencyMs?: number }> =
+    [];
 
-  // Check main API health
   try {
     const data = await api("/health");
     const svc = data.data?.services || {};
@@ -41,7 +42,6 @@ async function getHealthStatuses() {
     statuses.push({ id: "saas-api", status: "unhealthy" });
   }
 
-  // Check AI health
   try {
     const data = await api("/api/v1/ai/health");
     const svc = data.data?.services || {};
@@ -54,7 +54,7 @@ async function getHealthStatuses() {
       });
     }
   } catch {
-    // AI services not running — mark as unknown
+    // AI services optional — leave as unknown
   }
 
   return statuses;
@@ -62,20 +62,19 @@ async function getHealthStatuses() {
 
 export default async function Dashboard() {
   const [stats, statuses] = await Promise.all([getStats(), getHealthStatuses()]);
-
-  const servicesUp = statuses.filter(s => s.status === "healthy").length;
+  const servicesUp = statuses.filter((s) => s.status === "healthy").length;
 
   return (
-    <div>
+    <>
       <div className="mb-8">
-        <h1
-          className="text-3xl font-bold mb-2"
-          style={{ fontFamily: "var(--font-heading)" }}
-        >
-          Command Center
+        <p className="type-label-01 text-[#525252] uppercase tracking-wide">
+          Command center
+        </p>
+        <h1 className="mt-2 type-heading-05 text-[#161616]">
+          {DOMAIN === "localhost" ? "Local development" : DOMAIN}
         </h1>
-        <p className="text-[--color-text-dim]">
-          {DOMAIN === "localhost" ? "Local development" : DOMAIN} — {services.length} modules across 5 layers
+        <p className="mt-1 text-sm text-[#6f6f6f]">
+          {services.length} services across 5 layers
         </p>
       </div>
 
@@ -87,11 +86,7 @@ export default async function Dashboard() {
         servicesTotal={services.length}
       />
 
-      <ServiceGrid
-        services={services}
-        statuses={statuses}
-        domain={DOMAIN}
-      />
-    </div>
+      <ServiceGrid services={services} statuses={statuses} domain={DOMAIN} />
+    </>
   );
 }
