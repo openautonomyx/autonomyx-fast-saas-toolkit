@@ -1,25 +1,90 @@
 @import "tailwindcss";
 
+/*
+ * Autonomyx Dashboard — IBM Carbon Design Tokens
+ * Based on Carbon Design System v11 (https://carbondesignsystem.com/)
+ * Hand-built: no Carbon React runtime dep, just the tokens.
+ */
+
 @theme {
-  --color-bg: #080A10;
-  --color-surface: #0F1218;
-  --color-surface-2: #161B24;
-  --color-border: #1C2030;
-  --color-text: #E8E8ED;
-  --color-text-dim: #8B8D98;
-  --color-purple: #7B5CF0;
-  --color-green: #00D28C;
-  --color-pink: #E84393;
-  --color-blue: #3B82F6;
-  --color-amber: #F59E0B;
-  --color-red: #EF4444;
-  --font-heading: 'Fraunces', serif;
-  --font-body: 'DM Sans', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+  /* ── Carbon Gray 100 ramp ─────────────────── */
+  --color-gray-10: #f4f4f4;   /* page background */
+  --color-gray-20: #e0e0e0;   /* borders, dividers */
+  --color-gray-30: #c6c6c6;   /* disabled borders */
+  --color-gray-40: #a8a8a8;   /* placeholder text */
+  --color-gray-50: #8d8d8d;   /* tertiary text */
+  --color-gray-60: #6f6f6f;   /* secondary text */
+  --color-gray-70: #525252;   /* body text */
+  --color-gray-80: #393939;   /* inverse surfaces */
+  --color-gray-90: #262626;   /* headings */
+  --color-gray-100: #161616;  /* primary text, inverse bg */
+
+  /* ── Surfaces (white + subtle layers) ──────── */
+  --color-bg: #ffffff;
+  --color-layer-01: #f4f4f4;  /* elevated tile on white */
+  --color-layer-02: #ffffff;  /* elevated tile on gray-10 */
+  --color-field: #f4f4f4;     /* form field background */
+
+  /* ── Carbon Blue 100 ramp — interactive ────── */
+  --color-blue-10: #edf5ff;
+  --color-blue-20: #d0e2ff;
+  --color-blue-40: #78a9ff;
+  --color-blue-50: #4589ff;
+  --color-blue-60: #0f62fe;   /* PRIMARY interactive */
+  --color-blue-70: #0043ce;   /* hover */
+  --color-blue-80: #002d9c;   /* pressed */
+
+  /* ── Status colors ──────────────────────────── */
+  --color-red-60: #da1e28;    /* error / danger */
+  --color-red-50: #fa4d56;
+  --color-green-50: #24a148;  /* success */
+  --color-green-40: #42be65;
+  --color-yellow-30: #f1c21b; /* warning */
+  --color-yellow-20: #fdd13a;
+
+  /* ── Spacing (Carbon 8-point grid) ──────────── */
+  --spacing-01: 0.125rem;  /* 2px  */
+  --spacing-02: 0.25rem;   /* 4px  */
+  --spacing-03: 0.5rem;    /* 8px  */
+  --spacing-04: 0.75rem;   /* 12px */
+  --spacing-05: 1rem;      /* 16px */
+  --spacing-06: 1.5rem;    /* 24px */
+  --spacing-07: 2rem;      /* 32px */
+  --spacing-08: 2.5rem;    /* 40px */
+  --spacing-09: 3rem;      /* 48px */
+  --spacing-10: 4rem;      /* 64px */
+
+  /* ── Carbon uses sharp corners ──────────────── */
+  --radius-none: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+
+  /* ── Fonts (loaded via next/font in layout) ── */
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
 }
 
-body {
+/* ── Base styles ──────────────────────────────── */
+html, body {
   background: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-body);
+  color: var(--color-gray-100);
+  font-family: var(--font-plex-sans), -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.875rem; /* Carbon body-01 = 14px */
+  line-height: 1.28572;
+  letter-spacing: 0.16px;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Carbon type scale */
+.type-heading-01 { font-size: 0.875rem; font-weight: 600; line-height: 1.28572; letter-spacing: 0.16px; }
+.type-heading-02 { font-size: 1rem;     font-weight: 600; line-height: 1.375;   letter-spacing: 0; }
+.type-heading-03 { font-size: 1.25rem;  font-weight: 400; line-height: 1.4;     letter-spacing: 0; }
+.type-heading-04 { font-size: 1.75rem;  font-weight: 400; line-height: 1.28572; letter-spacing: 0; }
+.type-heading-05 { font-size: 2rem;     font-weight: 400; line-height: 1.25;    letter-spacing: 0; }
+.type-heading-06 { font-size: 2.625rem; font-weight: 300; line-height: 1.199;   letter-spacing: 0; }
+.type-body-01    { font-size: 0.875rem; font-weight: 400; line-height: 1.28572; letter-spacing: 0.16px; }
+.type-body-02    { font-size: 1rem;     font-weight: 400; line-height: 1.5;     letter-spacing: 0; }
+.type-label-01   { font-size: 0.75rem;  font-weight: 400; line-height: 1.33333; letter-spacing: 0.32px; }
+.type-code-01    { font-size: 0.75rem;  font-weight: 400; line-height: 1.33333; letter-spacing: 0.32px; font-family: var(--font-plex-mono), monospace; }
