@@ -256,6 +256,18 @@ These connect via API keys (no self-hosted containers):
 - [Pricing Page Template](docs/templates/pricing-page.md)
 - [Investor Metrics Template](docs/templates/investor-metrics.md)
 
+## Case Studies
+
+In-depth writeups on how the toolkit was designed and built. Each
+piece is grounded in actual commits and verifiable numbers.
+
+- [**Building the Fast SaaS Toolkit**](case-studies/building-the-fast-saas-toolkit.md) — full story of how a 22-module enterprise SaaS launchpad came together in 25 commits (~3,900 words)
+- [**Carbon Dashboard Rebrand**](case-studies/blog/carbon-dashboard-rebrand.md) — how the dashboard was rebranded to IBM Carbon Design System in 3 commits with First Load JS under 102 KB (~3,000 words)
+
+Each case study has a paired `.wp.html` file in WordPress Gutenberg
+format for easy publishing. See [case-studies/README.md](case-studies/README.md)
+for the full index and writing guidelines.
+
 ## Sponsor
 
 If this toolkit saves you time, consider sponsoring its development. Your support helps maintain 22 modules, keep dependencies updated, and build new features.
