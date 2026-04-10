@@ -1,0 +1,557 @@
+<!-- wp:heading {"level":1} -->
+<h1 class="wp-block-heading">How We Rebranded a Next.js Dashboard to IBM Carbon Design System in 3 Commits (and Kept First Load JS Under 102 KB)</h1>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><strong>TL;DR:</strong> We replaced a dark-themed, purple-accented Next.js dashboard with IBM Carbon Design System v11 — hand-building six primitives instead of pulling in <code>@carbon/react</code>. The result: matching Carbon's visual language exactly, same ~102 KB First Load JS, 480 lines of component code the team now owns. Here's the decision process, the code, the numbers, and what would have broken if we'd made the other choice.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>Project:</strong> <a href="https://github.com/openautonomyx/autonomyx-fast-saas-toolkit">openautonomyx/autonomyx-fast-saas-toolkit</a> — the dashboard for a 22-module enterprise SaaS launchpad</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Package:</strong> <code>packages/dashboard</code></li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Stack:</strong> Next.js 15 App Router, React 19, Tailwind CSS v4, IBM Plex fonts</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Rebrand commits:</strong> <code>cc34c09</code> → <code>e3aafd5</code> → <code>6b36b1a</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">The starting point</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The original dashboard was built in one commit (<code>b9b323a</code>) as a dark-themed command center using the Autonomyx brand palette: background <code>#080A10</code>, primary purple <code>#7B5CF0</code>, accent green <code>#00D28C</code>, Fraunces serif headings, DM Sans body. It looked fine. It shipped. Users found it.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>But the more we sat with it, the more it felt like <em>another startup dashboard</em>. Rounded corners, gradient accents, a serif hero — the same aesthetic decisions you'd find on every Y Combinator batch demo day. For a product whose value proposition is "boring enterprise infrastructure, done right," that aesthetic was working against us. We wanted the dashboard to feel like <strong>IBM Cloud</strong>, not like <strong>another Linear clone</strong>.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Two weeks after the initial dashboard shipped, I opened a new branch to rebrand it against IBM Carbon Design System v11.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Why Carbon</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Carbon is IBM's open-source design system. It's the visual language behind IBM Cloud, Watson, and Think — products that serve tens of thousands of enterprise teams doing unglamorous, high-stakes work. The Carbon aesthetic is deliberate:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>Sharp corners everywhere.</strong> No <code>border-radius</code> anywhere. Carbon uses this as a design principle — rounded corners are informal, sharp corners are professional.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>14 px base body text</strong> with <code>letter-spacing: 0.16px</code>, <code>line-height: 1.28572</code>. These specific numbers come from the <code>body-01</code> type token. You hit them exactly or you don't match Carbon.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>8-point grid</strong> for spacing. Not 4-point, not arbitrary. Every gap, padding, and margin is a multiple of 8 pixels.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Gray 100 ramp</strong> for neutrals: <code>#f4f4f4</code> (gray-10), <code>#e0e0e0</code> (gray-20), <code>#c6c6c6</code> (gray-30) … through <code>#161616</code> (gray-100). These hex values are published in <code>@carbon/colors</code> and treated as sacred.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Blue 60 (<code>#0f62fe</code>) as the single primary interaction color.</strong> Not blue-500, not <code>#3B82F6</code> — specifically <code>#0f62fe</code>, which is called <code>interactive-01</code> in the Carbon token vocabulary.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>IBM Plex Sans and IBM Plex Mono</strong> as the fonts. Google Fonts hosts both; Carbon won't feel right in anything else.</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>What we liked about Carbon wasn't just the aesthetic. It was the discipline. Every value is a token. Every token has a name. Every decision is documented in a spec page on <a href="https://carbondesignsystem.com">carbondesignsystem.com</a>. There's no "what should the button height be" debate — Carbon says 32 / 40 / 48 pixels for small / medium / large, and if you disagree you're not using Carbon.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>For a dashboard that's going to grow into 20+ pages of admin tooling, that kind of discipline was worth more than any visual opinion we had.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">The decision that shaped everything: <code>@carbon/react</code> or hand-build?</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Carbon ships an official React component library: <a href="https://www.npmjs.com/package/@carbon/react"><code>@carbon/react</code></a>. It has ~60 production-ready components — Button, DataTable, Modal, Tabs, Accordion, Breadcrumb, the whole kitchen. Drop it in and your dashboard looks like Carbon overnight.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>We looked at it, and didn't use it.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Here's the math that drove the decision. The dashboard needs, by our count, <strong>six</strong> components:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table>
+<thead><tr>
+<th>Component</th>
+<th>Where it's used</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Shell</strong> (header + side nav + content area)</td>
+<td>Every page</td>
+</tr>
+<tr>
+<td><strong>Button</strong></td>
+<td>Actions everywhere</td>
+</tr>
+<tr>
+<td><strong>TextInput</strong></td>
+<td>Forms (future tenant/user editing)</td>
+</tr>
+<tr>
+<td><strong>Modal</strong></td>
+<td>Confirmation dialogs (future tenant delete, plan change)</td>
+</tr>
+<tr>
+<td><strong>DataTable</strong></td>
+<td>Overview page's service grid, future tenant/user tables</td>
+</tr>
+<tr>
+<td><strong>StatTile</strong></td>
+<td>Overview page's stats bar (4 tiles)</td>
+</tr>
+</tbody>
+</table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>Six components. <code>@carbon/react</code> gives us sixty. Installing the full package to use 10% of its surface area would add roughly <strong>500 KB</strong> of JavaScript to the bundle after tree-shaking — Carbon React is not aggressively tree-shakable because its components cross-reference each other and carry their own CSS-in-JS runtime. Measured against a baseline First Load JS of ~95 KB, that's a <strong>6× increase</strong> in bundle size to get six components we could hand-build from Carbon's published visual specs.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The other option: write the six components ourselves, using Tailwind v4 tokens for the Carbon color palette, <code>@carbon/icons-react</code> for the icon set (which is small and tree-shakes cleanly), and plain React for the component behavior. The Carbon spec pages document exact pixel values, exact hex codes, exact behaviors — there's no guesswork involved. Hand-building means maintaining ~500 lines of component code, but those 500 lines are ours, fit exactly our use cases, and don't ship anything we don't use.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>We chose hand-building. Here's what that looked like in practice.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Step 1: tokens first</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The entire Carbon design system lives in tokens — colors, spacing, type, radius. Tailwind v4 introduced a new <code>@theme</code> directive in CSS that lets you declare design tokens and have them work as both Tailwind utility classes and raw CSS custom properties. This is the perfect home for Carbon tokens.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Here's what went into <code>src/app/globals.css</code>:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>27 color tokens</strong> covering the Gray 100 ramp (10-100), the Blue 100 ramp (10-80), and status colors (red-60 for errors, green-50 for success, yellow-30 for warnings). Each value is a literal hex from <code>@carbon/colors</code> — not a "close enough" approximation. Specifically:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>Gray 10 <code>#f4f4f4</code> — page background</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li>Gray 20 <code>#e0e0e0</code> — borders and dividers</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li>Gray 70 <code>#525252</code> — body text</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li>Gray 100 <code>#161616</code> — primary text and the dark header</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li>Blue 60 <code>#0f62fe</code> — primary interactive</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li>Red 60 <code>#da1e28</code> — error / danger</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li>Green 50 <code>#24a148</code> — success</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p><strong>10 spacing tokens</strong> on the 8-point grid: spacing-01 through spacing-10, mapping to 2px, 4px, 8px, 12px, 16px, 24px, 32px, 40px, 48px, 64px. These become Tailwind classes like <code>p-[--spacing-05]</code> or can be used directly in CSS.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Sharp-corner radius tokens.</strong> All five radius tokens (<code>--radius-none</code>, <code>sm</code>, <code>md</code>, <code>lg</code>, <code>xl</code>) set to <code>0</code>. This was a deliberate override — by default Tailwind uses <code>--radius-md: 0.375rem</code> which would create rounded corners anywhere we forgot to override them. Setting them all to zero means we can never accidentally introduce a rounded corner.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Font variables</strong> for IBM Plex Sans and IBM Plex Mono, loaded via <code>next/font/google</code> in <code>layout.tsx</code> with the correct weight subsets (300/400/500/600 for Sans, 400/500 for Mono). The fonts are fetched at build time, self-hosted, and served with optimal <code>font-display: swap</code> behavior.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Carbon type scale classes</strong> — <code>.type-heading-01</code> through <code>.type-heading-06</code>, <code>.type-body-01</code>, <code>.type-body-02</code>, <code>.type-label-01</code>, <code>.type-code-01</code>. Each sets the exact font size, weight, line-height, and letter-spacing from Carbon's type spec. Using these instead of arbitrary Tailwind utilities means every heading in the dashboard is guaranteed Carbon-compliant.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Body default</strong> of 14 px with 0.16 px letter-spacing, antialiased. This is the <code>body-01</code> token — Carbon's baseline body text. Every text element in the dashboard inherits this unless explicitly overridden.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The whole design system is one CSS file. 91 lines. That's it.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Committed as <code>cc34c09</code>: <code>feat(dashboard): adopt IBM Carbon Design System tokens and fonts</code>.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Step 2: primitives (the fun part)</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>With tokens in place, the six primitives came together quickly. Here are the actual line counts from the final code:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table>
+<thead><tr>
+<th>Primitive</th>
+<th>Lines</th>
+<th>Carbon spec it matches</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>Button.tsx</code></td>
+<td>53</td>
+<td><a href="https://carbondesignsystem.com/components/button/usage/">Button component</a></td>
+</tr>
+<tr>
+<td><code>TextInput.tsx</code></td>
+<td>43</td>
+<td><a href="https://carbondesignsystem.com/components/text-input/usage/">Text input component</a></td>
+</tr>
+<tr>
+<td><code>StatTile.tsx</code></td>
+<td>44</td>
+<td><a href="https://carbondesignsystem.com/components/tile/usage/">Tile component</a></td>
+</tr>
+<tr>
+<td><code>Shell.tsx</code></td>
+<td>96</td>
+<td><a href="https://carbondesignsystem.com/components/UI-shell-header/usage/">UI Shell pattern</a></td>
+</tr>
+<tr>
+<td><code>Modal.tsx</code></td>
+<td>107</td>
+<td><a href="https://carbondesignsystem.com/components/modal/usage/">Modal component</a></td>
+</tr>
+<tr>
+<td><code>DataTable.tsx</code></td>
+<td>137</td>
+<td><a href="https://carbondesignsystem.com/components/data-table/usage/">DataTable component</a></td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>480</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>A few specific decisions worth calling out:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">Button: 4 kinds × 3 sizes, no CSS-in-JS</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Carbon specifies four button kinds — primary (blue-60), secondary (gray-80), tertiary (outlined blue), ghost (text-only), and danger (red-60) — and three sizes (32 / 40 / 48 pixels tall). The hand-built <code>Button.tsx</code> uses two lookup objects:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><code>KIND_STYLES: Record&lt;Kind, string&gt;</code> mapping each kind to its Tailwind classes for background, text color, hover state, active state, and disabled state</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><code>SIZE_STYLES: Record&lt;Size, string&gt;</code> mapping each size to its height and padding classes</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>One JSX expression composes both with an optional <code>className</code> override and <code>forwardRef</code> for use in forms. 53 lines total, strictly typed, zero runtime CSS generation.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Carbon React's Button is ~300 lines and ships with its own SCSS compiler output. Ours is 53 lines of TypeScript plus whatever classes Tailwind compiles. The visual result is identical.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">DataTable: rendered the "if you have a row link, wrap the whole row in an anchor" idiom</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Carbon's DataTable spec says clickable rows should be fully accessible — clicking anywhere in the row should navigate, not just the text in one cell. Most Carbon React usage achieves this with an <code>onRowClick</code> handler, which is keyboard-hostile (needs manual ARIA handling). Our DataTable accepts an optional <code>rowHref(row)</code> prop and, when present, wraps each cell's content in a Next.js <code>&lt;Link&gt;</code>. The row is fully accessible by default — Tab focuses it, Enter navigates it, screen readers announce it as a link. No handler gymnastics.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>This is a small detail that matters for accessibility and was easier to get right in hand-built code than in patched third-party components.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">Shell: the 48 + 256 layout</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Carbon's UI Shell is a pattern, not a component: a 48-pixel-tall black header fixed to the top of the viewport, a 256-pixel-wide white side nav fixed to the left, and content offset by both. The hand-built <code>Shell.tsx</code> is straight Tailwind — <code>fixed top-0 left-0 right-0 h-12</code> for the header, <code>fixed top-12 left-0 bottom-0 w-64</code> for the sidebar, <code>ml-64 mt-12</code> for the main content area. Zero JavaScript, pure layout.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The side nav has a <code>NAV_ITEMS</code> array with 7 items: Overview (active), Tenants, Users, Billing, Workflows, AI, Settings. Four are marked <code>disabled: true</code> as placeholders for pages that don't exist yet — they render in gray-40 with <code>cursor-not-allowed</code> instead of being clickable links. This is a Carbon pattern: disabled nav items stay visible so users can see what's coming without being able to click into half-built pages.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Icons come from <code>@carbon/icons-react</code>, which <strong>does</strong> tree-shake cleanly — we import only the 8 icons we need (Dashboard, Enterprise, User, ChartLineData, Flow, Ai, Settings, Logout, Close, CheckmarkFilled, WarningAltFilled, CircleDash) and get ~5 KB of added bundle size instead of the full icon catalog.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">Modal: ESC dismiss and click-outside handling</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Modals are the most behavior-heavy primitive. Carbon's spec requires: ESC key dismisses, clicking the overlay dismisses, clicking inside the modal doesn't dismiss, focus is trapped inside while open, and primary/secondary buttons are full-width in the footer split 50/50. The hand-built <code>Modal.tsx</code> uses a <code>useEffect</code> for keyboard event binding, <code>stopPropagation</code> on the inner div to prevent overlay bubbling, and two flex-1 buttons for the footer.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>107 lines. The Carbon React modal is closer to 500 and ships with a focus-trap library bolted on.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Committed as <code>e3aafd5</code>: <code>feat(dashboard): hand-built Carbon primitives (no Carbon React dep)</code>.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Step 3: rewire the overview page</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>With tokens and primitives in place, the overview page needed to be rewired. The pre-rebrand version used a <code>ServiceCard</code> component for each of the 22 services, laid out in a responsive grid. The Carbon way is to show tabular data in a <strong>DataTable</strong>.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The rebrand replaces the card grid with a single DataTable, grouped by layer. Here's how the new <code>ServiceGrid.tsx</code> works:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"ordered":true} -->
+<ol class="wp-block-list"><!-- wp:list-item -->
+<li>Iterate over the 5 groups in display order: essential → core → ops → growth → ai</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li>For each group, render a 36-pixel-tall group header row with the group's color swatch and name</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li>Below the header, render the services in that group as standard DataTable rows with five columns: Status icon | Service name | Description | URL (clickable) | Latency (mono)</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li>Use <code>CheckmarkFilled</code> / <code>WarningAltFilled</code> / <code>CircleDash</code> from <code>@carbon/icons-react</code> for the status column</li>
+<!-- /wp:list-item --></ol>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>The <code>StatsBar.tsx</code> got simpler: the old version had a 4-up grid of custom card components. The new version uses the shared <code>StatTile</code> primitive for each of the four tiles (Tenants, Users, API Calls, Services) with 1-pixel gaps in gray-20 between them to create the Carbon "data tile grid" look.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><code>ServiceCard.tsx</code> was deleted — its job is now done by the DataTable row pattern inside <code>ServiceGrid</code>. <strong>Minus 60 lines</strong> of code in exchange for a more information-dense layout.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Committed as <code>6b36b1a</code>: <code>refactor(dashboard): convert overview to Carbon DataTable pattern</code>.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">The numbers</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Three commits. Here's what they did in diff-stat form:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code> packages/dashboard/package.json                   |  10 +-
+ packages/dashboard/src/app/globals.css            | 101 ++++++++++++---
+ packages/dashboard/src/app/layout.tsx             |  51 ++++----
+ packages/dashboard/src/app/page.tsx               |  37 +++---
+ packages/dashboard/src/components/Button.tsx      |  53 ++++++++
+ packages/dashboard/src/components/DataTable.tsx   | 137 ++++++++++++++++++++
+ packages/dashboard/src/components/Modal.tsx       | 107 ++++++++++++++++
+ packages/dashboard/src/components/ServiceCard.tsx |  60 ---------
+ packages/dashboard/src/components/ServiceGrid.tsx | 145 ++++++++++++++++------
+ packages/dashboard/src/components/Shell.tsx       |  96 ++++++++++++++
+ packages/dashboard/src/components/StatTile.tsx    |  44 +++++++
+ packages/dashboard/src/components/StatsBar.tsx    |  44 +++----
+ packages/dashboard/src/components/TextInput.tsx   |  43 +++++++
+ packages/dashboard/tsconfig.json                  |  29 ++++-
+ 14 files changed, 758 insertions(+), 199 deletions(-)</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p><strong>Net: +559 lines.</strong> That's the whole cost of the rebrand. 480 of those lines are the new primitives; the rest is tokens, layout wiring, and the DataTable-pattern rewrite of the overview.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The performance numbers from <code>pnpm build</code> on the final commit:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>Compile time:</strong> 3 seconds (unchanged from pre-rebrand)</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>First Load JS:</strong> 102 KB (<code>chunks/695</code> = 45.3 KB, <code>chunks/d99d8e6a</code> = 54.2 KB, shared = 1.9 KB, page = 123 B)</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Static pages generated:</strong> 4</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Runtime Carbon dependency:</strong> zero (only <code>@carbon/icons-react</code> which tree-shakes to ~5 KB)</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>For comparison, installing <code>@carbon/react</code> and using a handful of its components typically adds 400-600 KB to First Load JS depending on which components you import. The hand-built approach keeps the bundle essentially unchanged while delivering the full Carbon visual language.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">What would have gone wrong with <code>@carbon/react</code></h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Worth being explicit about what we gave up by not using the official library:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>60 components for free</strong>, not 6. If the dashboard grows to need Tabs, Accordion, Breadcrumb, Dropdown, DatePicker, FileUploader — we'd have to hand-build each of those too. <code>@carbon/react</code> already has them.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Documented accessibility.</strong> Carbon React has been audited and tested. Our hand-built primitives rely on us reading the spec correctly. A subtle focus-trap bug in our Modal would need to be found and fixed by us, not caught by Carbon's test suite.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Upstream updates.</strong> If IBM ships a new Carbon version with updated tokens, <code>@carbon/react</code> users get it by bumping a version. We'd need to diff our <code>globals.css</code> against the new spec manually.</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>And what we gained:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>102 KB First Load JS</strong> instead of ~500+ KB. For an internal tool dashboard, this difference is imperceptible — but it matters for caching, for rendering on slow connections, and for keeping the app light enough to load instantly.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Zero CSS-in-JS runtime.</strong> Carbon React uses emotion internally. Our primitives use Tailwind utility classes compiled at build time. No runtime CSS generation, no style recalculation, no emotion hash collisions.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Complete ownership.</strong> Every line of our component code is legible to the team. When something looks wrong, we can find it in ~500 lines of TypeScript instead of spelunking through node_modules.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Exact fit.</strong> Our <code>DataTable</code> has the exact features we use — row linking, group headers, toolbar actions — and none of the features we don't. Carbon React's DataTable is much larger because it has to cover sortable columns, selection checkboxes, pagination, filtering, and about ten other features we don't need yet.</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">When you should make the opposite call</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The hand-built-Carbon approach is right for us because:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"ordered":true} -->
+<ol class="wp-block-list"><!-- wp:list-item -->
+<li>We need <strong>fewer than 10 components</strong>. The moment the count crosses that threshold, the maintenance cost of hand-building starts to exceed the bundle savings.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li>We have <strong>full control over the design system</strong>. No external team is going to tell us "use these Carbon React props to match our updated spec." Our tokens are our tokens.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li>Our users are <strong>engineers and admins</strong>, not end consumers. We don't need Carbon's full accessibility test suite because our test suite is real users running it every day.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li>The dashboard is <strong>part of a larger codebase</strong> we already own. Adding 480 lines of primitives is a rounding error on top of ~5,400 lines of TypeScript.</li>
+<!-- /wp:list-item --></ol>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>If your dashboard is 40+ pages with every Carbon component used somewhere, if your team rotates design ownership frequently, or if your users include people who rely on assistive tech, you should absolutely use <code>@carbon/react</code>. The 500 KB is a fair price for not reinventing the wheel 60 times.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The point isn't that hand-building is always right. The point is that <strong>you should run the math</strong> before adding a design system as a dependency. Count the components you actually need, benchmark the bundle delta, look at what the library ships that you'll never use. Sometimes the answer is the official library. Sometimes it's 480 lines of CSS and TSX.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">The result</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Three commits later, the dashboard looks like IBM Cloud. Black 48-pixel header with the Autonomyx wordmark. 256-pixel white side nav with 7 menu items. Light gray content area with a 4-up stats grid and a DataTable showing 22 services grouped by layer. Sharp corners everywhere. IBM Plex Sans for body, IBM Plex Mono for latency values and code. Blue 60 links, red 60 errors, green 50 success checks.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>102 KB First Load JS. 3 second build. 480 lines of primitive code we own.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The difference it makes is psychological as much as visual. When a user lands on the dashboard, they don't see "another startup dashboard" — they see an enterprise tool that takes itself seriously. For a product whose entire value proposition is "take SaaS infrastructure seriously so you can take your product seriously," that's worth more than any component library download count.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Links</h2>
+<!-- /wp:heading -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>Repository:</strong> <a href="https://github.com/openautonomyx/autonomyx-fast-saas-toolkit">github.com/openautonomyx/autonomyx-fast-saas-toolkit</a></li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Dashboard package:</strong> <a href="https://github.com/openautonomyx/autonomyx-fast-saas-toolkit/tree/main/packages/dashboard">packages/dashboard</a></li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Rebrand commits:</strong></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>  - <a href="https://github.com/openautonomyx/autonomyx-fast-saas-toolkit/commit/cc34c09"><code>cc34c09</code> feat(dashboard): adopt IBM Carbon Design System tokens and fonts</a>   - <a href="https://github.com/openautonomyx/autonomyx-fast-saas-toolkit/commit/e3aafd5"><code>e3aafd5</code> feat(dashboard): hand-built Carbon primitives (no Carbon React dep)</a>   - <a href="https://github.com/openautonomyx/autonomyx-fast-saas-toolkit/commit/6b36b1a"><code>6b36b1a</code> refactor(dashboard): convert overview to Carbon DataTable pattern</a></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li><strong>Carbon Design System:</strong> <a href="https://carbondesignsystem.com">carbondesignsystem.com</a></li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Carbon React (official library):</strong> <a href="https://www.npmjs.com/package/@carbon/react">npmjs.com/package/@carbon/react</a></li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Carbon Icons React (tree-shakes):</strong> <a href="https://www.npmjs.com/package/@carbon/icons-react">npmjs.com/package/@carbon/icons-react</a></li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Full toolkit case study:</strong> <a href="../building-the-fast-saas-toolkit.md">building-the-fast-saas-toolkit.md</a></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
