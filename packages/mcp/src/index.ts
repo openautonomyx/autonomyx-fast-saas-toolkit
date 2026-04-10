@@ -969,6 +969,171 @@ server.tool(
 );
 
 // ═══════════════════════════════════════════════
+// POSTIZ (3)
+// ═══════════════════════════════════════════════
+
+server.tool(
+  "fast_saas_postiz_list_posts",
+  "List scheduled social media posts in Postiz",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/services/postiz/posts");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_postiz_create_post",
+  "Create and schedule a social media post via Postiz",
+  {
+    content: z.string().describe("Post content text"),
+    integration_id: z.string().describe("Target social channel ID"),
+    schedule_type: z.enum(["now", "schedule", "draft"]).optional().describe("Post type (default: draft)"),
+    date: z.string().optional().describe("Schedule date (ISO 8601, required if type=schedule)"),
+  },
+  async (args) => {
+    try {
+      const result = await client.post("/api/v1/services/postiz/posts", args);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_postiz_list_channels",
+  "List connected social media channels in Postiz",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/services/postiz/channels");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+// ═══════════════════════════════════════════════
+// TOOLJET (3)
+// ═══════════════════════════════════════════════
+
+server.tool(
+  "fast_saas_tooljet_list_apps",
+  "List all ToolJet applications",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/services/tooljet/apps");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_tooljet_get_app",
+  "Get details of a ToolJet application",
+  { app_id: z.string().describe("ToolJet app ID") },
+  async ({ app_id }) => {
+    try {
+      const result = await client.get(`/api/v1/services/tooljet/apps/${app_id}`);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_tooljet_list_datasources",
+  "List all ToolJet datasources",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/services/tooljet/datasources");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+// ═══════════════════════════════════════════════
+// MOODLE (2)
+// ═══════════════════════════════════════════════
+
+server.tool(
+  "fast_saas_moodle_list_courses",
+  "List all Moodle courses",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/services/moodle/courses");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_moodle_list_users",
+  "List Moodle users",
+  { search: z.string().optional().describe("Search by name or email") },
+  async ({ search }) => {
+    try {
+      const params: Record<string, string> = {};
+      if (search) params.search = search;
+      const result = await client.get("/api/v1/services/moodle/users", params);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+// ═══════════════════════════════════════════════
+// FINDR (3)
+// ═══════════════════════════════════════════════
+
+server.tool(
+  "fast_saas_findr_search",
+  "Run an entity resolution search via Autonomyx Findr",
+  {
+    query: z.string().describe("Search query (person, org, product, incident)"),
+    depth_mode: z.enum(["fast pass", "standard", "deep research"]).optional().describe("Search depth (default: fast pass)"),
+    location: z.string().optional().describe("Location filter"),
+  },
+  async (args) => {
+    try {
+      const result = await client.post("/api/v1/services/findr/search", {
+        query: args.query,
+        search_mode: "standard_search",
+        depth_mode: args.depth_mode || "fast pass",
+        filters: { location: args.location },
+        include_trace: true,
+      });
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_findr_health",
+  "Check Findr API and storage health (SurrealDB, OpenSearch, Redis)",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/services/findr/health");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_findr_me",
+  "Get current Findr auth context (viewer identity and roles)",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/services/findr/me");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+// ═══════════════════════════════════════════════
 // SERVICES HEALTH (1)
 // ═══════════════════════════════════════════════
 

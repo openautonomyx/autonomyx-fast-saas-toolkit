@@ -249,6 +249,44 @@ function buildEnvironment(mod: ModuleDefinition): Record<string, string> {
       env.LANGFLOW_SECRET_KEY = "${LANGFLOW_SECRET_KEY}";
       env.OLLAMA_BASE_URL = "http://ollama:11434";
       break;
+    case "postiz":
+      env.MAIN_URL = "https://social.${DOMAIN}";
+      env.FRONTEND_URL = "https://social.${DOMAIN}";
+      env.NEXT_PUBLIC_BACKEND_URL = "https://social.${DOMAIN}/api";
+      env.BACKEND_INTERNAL_URL = "http://localhost:3000";
+      env.DATABASE_URL = "postgresql://${POSTGRES_USER:-saas}:${POSTGRES_PASSWORD}@postgres:5432/postiz";
+      env.REDIS_URL = "redis://:${REDIS_PASSWORD}@redis:6379/5";
+      env.JWT_SECRET = "${POSTIZ_JWT_SECRET}";
+      env.IS_GENERAL = "true";
+      env.STORAGE_PROVIDER = "local";
+      env.UPLOAD_DIRECTORY = "/uploads";
+      env.NEXT_PUBLIC_UPLOAD_DIRECTORY = "/uploads";
+      break;
+    case "tooljet":
+      env.TOOLJET_DB = "postgresql://${POSTGRES_USER:-saas}:${POSTGRES_PASSWORD}@postgres:5432/tooljet";
+      env.SECRET_KEY_BASE = "${TOOLJET_SECRET_KEY}";
+      env.TOOLJET_HOST = "https://build.${DOMAIN}";
+      env.LOCKBOX_MASTER_KEY = "${TOOLJET_SECRET_KEY}";
+      env.NODE_ENV = "production";
+      break;
+    case "moodle":
+      env.MOODLE_DATABASE_TYPE = "mariadb";
+      env.MOODLE_DATABASE_HOST = "moodle-db";
+      env.MOODLE_DATABASE_NAME = "moodle";
+      env.MOODLE_DATABASE_USER = "moodle";
+      env.MOODLE_DATABASE_PASSWORD = "${MOODLE_DB_PASSWORD}";
+      env.MOODLE_USERNAME = "${MOODLE_USERNAME:-admin}";
+      env.MOODLE_PASSWORD = "${MOODLE_PASSWORD}";
+      env.MOODLE_EMAIL = "${ADMIN_EMAIL}";
+      env.MOODLE_SITE_NAME = "${MOODLE_SITE_NAME:-Learning}";
+      break;
+    case "findr":
+      env.SURREALDB_URL = "http://surrealdb:8000/rpc";
+      env.OPENSEARCH_URL = "http://opensearch:9200";
+      env.REDIS_URL = "redis://:${REDIS_PASSWORD}@redis:6379/6";
+      env.AUTH_REQUIRED = "false";
+      env.TRUSTED_SHARED_SECRET = "${FINDR_SECRET}";
+      break;
     case "claude-agent":
       env.ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY}";
       env.CLAUDE_AGENT_API_KEY = "${CLAUDE_AGENT_API_KEY}";
@@ -338,6 +376,11 @@ function buildSidecar(sidecar: NonNullable<ModuleDefinition["sidecars"]>[0], par
     env.MARIADB_DATABASE = "matomo";
     env.MARIADB_USER = "matomo";
     env.MARIADB_PASSWORD = "${MATOMO_DB_PASSWORD}";
+  } else if (sidecar.name === "moodle-db") {
+    env.MARIADB_ROOT_PASSWORD = "${MOODLE_DB_ROOT_PASSWORD}";
+    env.MARIADB_DATABASE = "moodle";
+    env.MARIADB_USER = "moodle";
+    env.MARIADB_PASSWORD = "${MOODLE_DB_PASSWORD}";
   } else if (sidecar.name === "librechat-mongodb") {
     env.MONGO_INITDB_ROOT_USERNAME = "librechat";
     env.MONGO_INITDB_ROOT_PASSWORD = "${LIBRECHAT_MONGODB_PASSWORD}";

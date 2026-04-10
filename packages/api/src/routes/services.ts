@@ -11,6 +11,10 @@ import type { AuthenticatedRequest } from "../types.js";
 const APPSMITH_URL = process.env.APPSMITH_URL || "http://appsmith:80";
 const DOCMOST_URL = process.env.DOCMOST_URL || "http://docmost:3000";
 const POSTHOG_URL = process.env.POSTHOG_URL || "http://posthog:8000";
+const POSTIZ_URL = process.env.POSTIZ_URL || "http://postiz:5000";
+const TOOLJET_URL = process.env.TOOLJET_URL || "http://tooljet:80";
+const MOODLE_URL = process.env.MOODLE_URL || "http://moodle:8080";
+const FINDR_URL = process.env.FINDR_URL || "http://findr-api:8000";
 
 async function proxy(url: string, opts?: RequestInit): Promise<any> {
   const res = await fetch(url, {
@@ -154,7 +158,111 @@ export function servicesRouter(): Router {
   });
 
   // ══════════════════════════════════════════════
-  // Health check for all three
+  // POSTIZ — Social media scheduling
+  // ══════════════════════════════════════════════
+
+  router.get("/postiz/posts", async (_req, res, next) => {
+    try {
+      const data = await proxy(`${POSTIZ_URL}/public/v1/posts`);
+      success(res, { data });
+    } catch (err) { next(err); }
+  });
+
+  router.post("/postiz/posts", async (req, res, next) => {
+    try {
+      const data = await proxy(`${POSTIZ_URL}/public/v1/posts`, {
+        method: "POST",
+        body: JSON.stringify(req.body),
+      });
+      success(res, { data, status: 201 });
+    } catch (err) { next(err); }
+  });
+
+  router.get("/postiz/channels", async (_req, res, next) => {
+    try {
+      const data = await proxy(`${POSTIZ_URL}/public/v1/integrations`);
+      success(res, { data });
+    } catch (err) { next(err); }
+  });
+
+  // ══════════════════════════════════════════════
+  // TOOLJET — Low-code internal tools
+  // ══════════════════════════════════════════════
+
+  router.get("/tooljet/apps", async (_req, res, next) => {
+    try {
+      const data = await proxy(`${TOOLJET_URL}/api/apps`);
+      success(res, { data });
+    } catch (err) { next(err); }
+  });
+
+  router.get("/tooljet/apps/:id", async (req, res, next) => {
+    try {
+      const data = await proxy(`${TOOLJET_URL}/api/apps/${req.params.id}`);
+      success(res, { data });
+    } catch (err) { next(err); }
+  });
+
+  router.get("/tooljet/datasources", async (_req, res, next) => {
+    try {
+      const data = await proxy(`${TOOLJET_URL}/api/data_sources`);
+      success(res, { data });
+    } catch (err) { next(err); }
+  });
+
+  // ══════════════════════════════════════════════
+  // MOODLE — Learning management
+  // ══════════════════════════════════════════════
+
+  router.get("/moodle/courses", async (_req, res, next) => {
+    try {
+      const token = process.env.MOODLE_WS_TOKEN;
+      const params = `wstoken=${token}&wsfunction=core_course_get_courses&moodlewsrestformat=json`;
+      const data = await proxy(`${MOODLE_URL}/webservice/rest/server.php?${params}`);
+      success(res, { data });
+    } catch (err) { next(err); }
+  });
+
+  router.get("/moodle/users", async (req, res, next) => {
+    try {
+      const token = process.env.MOODLE_WS_TOKEN;
+      const search = req.query.search || "";
+      const params = `wstoken=${token}&wsfunction=core_user_get_users&moodlewsrestformat=json&criteria[0][key]=search&criteria[0][value]=${search}`;
+      const data = await proxy(`${MOODLE_URL}/webservice/rest/server.php?${params}`);
+      success(res, { data });
+    } catch (err) { next(err); }
+  });
+
+  // ══════════════════════════════════════════════
+  // FINDR — Entity resolution & investigation
+  // ══════════════════════════════════════════════
+
+  router.post("/findr/search", async (req, res, next) => {
+    try {
+      const data = await proxy(`${FINDR_URL}/api/v1/search`, {
+        method: "POST",
+        body: JSON.stringify(req.body),
+      });
+      success(res, { data });
+    } catch (err) { next(err); }
+  });
+
+  router.get("/findr/health", async (_req, res, next) => {
+    try {
+      const data = await proxy(`${FINDR_URL}/health`);
+      success(res, { data });
+    } catch (err) { next(err); }
+  });
+
+  router.get("/findr/me", async (_req, res, next) => {
+    try {
+      const data = await proxy(`${FINDR_URL}/api/v1/me`);
+      success(res, { data });
+    } catch (err) { next(err); }
+  });
+
+  // ══════════════════════════════════════════════
+  // Health check for all services
   // ══════════════════════════════════════════════
 
   router.get("/health", async (_req, res) => {
@@ -164,6 +272,10 @@ export function servicesRouter(): Router {
       appsmith: `${APPSMITH_URL}/api/v1/users/me`,
       docmost: `${DOCMOST_URL}/api/health`,
       posthog: `${POSTHOG_URL}/_health`,
+      postiz: `${POSTIZ_URL}/`,
+      tooljet: `${TOOLJET_URL}/api/health`,
+      moodle: `${MOODLE_URL}/login/index.php`,
+      findr: `${FINDR_URL}/health`,
     })) {
       const start = performance.now();
       try {

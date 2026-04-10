@@ -561,6 +561,96 @@ const langfuse: ModuleDefinition = {
   volumes: [],
 };
 
+// ── Additional Growth Modules ─────────────────
+
+const postiz: ModuleDefinition = {
+  id: "postiz",
+  name: "Postiz",
+  description: "Social media scheduling and management (Buffer/Hootsuite alternative)",
+  group: "growth",
+  defaultEnabled: false,
+  dependencies: ["postgres", "redis"],
+  image: "ghcr.io/gitroomhq/postiz-app:latest",
+  ports: { web: 5000 },
+  envVars: [
+    { key: "POSTIZ_JWT_SECRET", description: "JWT secret for Postiz", secret: true, required: true },
+  ],
+  healthCheck: { path: "/", port: 5000, intervalSeconds: 30 },
+  pgDatabase: "postiz",
+  caddyRoutes: [{ subdomain: "social", target: "postiz:5000" }],
+  volumes: ["postiz-uploads:/uploads"],
+};
+
+const tooljet: ModuleDefinition = {
+  id: "tooljet",
+  name: "ToolJet",
+  description: "Low-code platform for building internal tools and dashboards",
+  group: "growth",
+  defaultEnabled: false,
+  dependencies: ["postgres"],
+  image: "tooljet/tooljet:latest",
+  ports: { web: 80 },
+  envVars: [
+    { key: "TOOLJET_SECRET_KEY", description: "ToolJet encryption key", secret: true, required: true },
+    { key: "TOOLJET_HOST", description: "ToolJet public URL", default: "https://build.${DOMAIN}" },
+  ],
+  healthCheck: { path: "/api/health", port: 80, intervalSeconds: 30 },
+  pgDatabase: "tooljet",
+  caddyRoutes: [{ subdomain: "build", target: "tooljet:80" }],
+  volumes: [],
+};
+
+const moodle: ModuleDefinition = {
+  id: "moodle",
+  name: "Moodle",
+  description: "Learning management system (LMS) for training and education",
+  group: "growth",
+  defaultEnabled: false,
+  dependencies: [],
+  image: "bitnami/moodle:latest",
+  ports: { web: 8080 },
+  envVars: [
+    { key: "MOODLE_USERNAME", description: "Admin username", default: "admin" },
+    { key: "MOODLE_PASSWORD", description: "Admin password", secret: true, required: true },
+    { key: "MOODLE_EMAIL", description: "Admin email", default: "${ADMIN_EMAIL}" },
+    { key: "MOODLE_SITE_NAME", description: "Site name", default: "Learning" },
+  ],
+  healthCheck: { path: "/login/index.php", port: 8080, intervalSeconds: 30 },
+  caddyRoutes: [{ subdomain: "learn", target: "moodle:8080" }],
+  volumes: ["moodle-data:/bitnami/moodle", "moodledata:/bitnami/moodledata"],
+  sidecars: [
+    {
+      name: "moodle-db",
+      image: "mariadb:11",
+      envVars: [
+        { key: "MARIADB_ROOT_PASSWORD", description: "MariaDB root password", secret: true },
+        { key: "MARIADB_DATABASE", description: "Database name", default: "moodle" },
+        { key: "MARIADB_USER", description: "Database user", default: "moodle" },
+        { key: "MARIADB_PASSWORD", description: "Database password", secret: true },
+      ],
+      volumes: ["moodle-db-data:/var/lib/mysql"],
+      healthCheck: { path: "", port: 3306, method: "mariadb-healthcheck" },
+    },
+  ],
+};
+
+const findr: ModuleDefinition = {
+  id: "findr",
+  name: "Findr",
+  description: "Entity resolution, investigation, and knowledge-graph research",
+  group: "ai",
+  defaultEnabled: false,
+  dependencies: ["postgres"],
+  image: "build", // Custom build from findr repo Dockerfile
+  ports: { api: 8000, web: 5173 },
+  envVars: [
+    { key: "FINDR_SECRET", description: "Findr shared secret for proxy auth", secret: true, required: true },
+  ],
+  healthCheck: { path: "/health", port: 8000 },
+  caddyRoutes: [{ subdomain: "findr", target: "findr-api:8000" }],
+  volumes: [],
+};
+
 // ── Registry ──────────────────────────────────
 
 export const MODULE_REGISTRY: Record<string, ModuleDefinition> = {
@@ -587,14 +677,18 @@ export const MODULE_REGISTRY: Record<string, ModuleDefinition> = {
   ollama,
   "claude-agent": claudeAgent,
   langfuse,
+  postiz,
+  tooljet,
+  moodle,
+  findr,
 };
 
 export const MODULE_GROUPS: Record<ModuleGroup, string[]> = {
   essential: ["postgres", "redis", "caddy"],
   core: ["logto", "lago", "rustfs", "dashboard"],
   ops: ["glitchtip", "uptime-kuma", "grafana-stack"],
-  growth: ["matomo", "mautic", "stalwart", "nocodb", "n8n", "appsmith", "docmost", "posthog"],
-  ai: ["librechat", "langflow", "ollama", "claude-agent", "langfuse"],
+  growth: ["matomo", "mautic", "stalwart", "nocodb", "n8n", "appsmith", "docmost", "posthog", "postiz", "tooljet", "moodle"],
+  ai: ["librechat", "langflow", "ollama", "claude-agent", "langfuse", "findr"],
 };
 
 export function getModule(id: string): ModuleDefinition | undefined {
