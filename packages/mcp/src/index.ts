@@ -795,6 +795,196 @@ server.tool(
 );
 
 // ═══════════════════════════════════════════════
+// APPSMITH (4)
+// ═══════════════════════════════════════════════
+
+server.tool(
+  "fast_saas_appsmith_list_apps",
+  "List all Appsmith applications (low-code internal tools)",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/services/appsmith/applications");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_appsmith_get_app",
+  "Get details of a specific Appsmith application",
+  { app_id: z.string().describe("Appsmith application ID") },
+  async ({ app_id }) => {
+    try {
+      const result = await client.get(`/api/v1/services/appsmith/applications/${app_id}`);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_appsmith_list_pages",
+  "List pages in an Appsmith application",
+  { app_id: z.string().describe("Appsmith application ID") },
+  async ({ app_id }) => {
+    try {
+      const result = await client.get(`/api/v1/services/appsmith/applications/${app_id}/pages`);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_appsmith_list_datasources",
+  "List all Appsmith datasources (database connections, API endpoints)",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/services/appsmith/datasources");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+// ═══════════════════════════════════════════════
+// DOCMOST (4)
+// ═══════════════════════════════════════════════
+
+server.tool(
+  "fast_saas_docmost_list_workspaces",
+  "List all Docmost workspaces (knowledge base)",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/services/docmost/workspaces");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_docmost_list_pages",
+  "List pages in a Docmost space",
+  { space_id: z.string().describe("Docmost space ID") },
+  async ({ space_id }) => {
+    try {
+      const result = await client.get(`/api/v1/services/docmost/spaces/${space_id}/pages`);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_docmost_get_page",
+  "Get a specific Docmost page with content",
+  { page_id: z.string().describe("Docmost page ID") },
+  async ({ page_id }) => {
+    try {
+      const result = await client.get(`/api/v1/services/docmost/pages/${page_id}`);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_docmost_create_page",
+  "Create a new page in Docmost",
+  {
+    title: z.string().describe("Page title"),
+    content: z.string().optional().describe("Page content (markdown)"),
+    space_id: z.string().describe("Space ID to create the page in"),
+  },
+  async (args) => {
+    try {
+      const result = await client.post("/api/v1/services/docmost/pages", {
+        title: args.title,
+        content: args.content,
+        spaceId: args.space_id,
+      });
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+// ═══════════════════════════════════════════════
+// POSTHOG (4)
+// ═══════════════════════════════════════════════
+
+server.tool(
+  "fast_saas_posthog_list_feature_flags",
+  "List all PostHog feature flags",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/services/posthog/feature-flags");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_posthog_list_insights",
+  "List PostHog insights (saved analytics queries)",
+  { limit: z.number().optional().describe("Max results (default 10)") },
+  async ({ limit }) => {
+    try {
+      const params: Record<string, string> = {};
+      if (limit) params.limit = String(limit);
+      const result = await client.get("/api/v1/services/posthog/insights", params);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_posthog_list_persons",
+  "List persons (users) tracked by PostHog",
+  { search: z.string().optional().describe("Search by email or name") },
+  async ({ search }) => {
+    try {
+      const params: Record<string, string> = {};
+      if (search) params.search = search;
+      const result = await client.get("/api/v1/services/posthog/persons", params);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+server.tool(
+  "fast_saas_posthog_list_events",
+  "List recent PostHog events (analytics data)",
+  {
+    event: z.string().optional().describe("Filter by event name (e.g. $pageview, signup)"),
+    limit: z.number().optional().describe("Max results (default 20)"),
+  },
+  async ({ event, limit }) => {
+    try {
+      const params: Record<string, string> = {};
+      if (event) params.event = event;
+      if (limit) params.limit = String(limit);
+      const result = await client.get("/api/v1/services/posthog/events", params);
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+// ═══════════════════════════════════════════════
+// SERVICES HEALTH (1)
+// ═══════════════════════════════════════════════
+
+server.tool(
+  "fast_saas_services_health",
+  "Check health of Appsmith, Docmost, and PostHog",
+  {},
+  async () => {
+    try {
+      const result = await client.get("/api/v1/services/health");
+      return jsonResult(result);
+    } catch (e: any) { return jsonResult({ error: e.message }); }
+  }
+);
+
+// ═══════════════════════════════════════════════
 // AI TOOLS — SYSTEM (2)
 // ═══════════════════════════════════════════════
 
