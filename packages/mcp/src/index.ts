@@ -738,6 +738,63 @@ server.tool(
 );
 
 // ═══════════════════════════════════════════════
+// OSS-TO-SAAS CONVERSION (2)
+// ═══════════════════════════════════════════════
+
+server.tool(
+  "fast_saas_convert_to_saas",
+  "Convert an open-source GitHub repo into a multi-tenant SaaS. Runs the full oss-to-saas pipeline asynchronously and returns a job_id for polling.",
+  {
+    github_url: z.string().url().describe("GitHub repo URL to convert (e.g. https://github.com/owner/repo)"),
+    project_name: z.string().optional().describe("Target project slug. Defaults to the repo name."),
+  },
+  async ({ github_url, project_name }) => {
+    const slug =
+      project_name ||
+      github_url.replace(/\.git$/, "").split("/").pop() ||
+      "saas-app";
+    const workdir = `/saas-apps/${slug}`;
+    const prompt = `Use the /oss-to-saas skill to convert ${github_url} into a multi-tenant SaaS.
+
+1. Clone the repo into ${workdir} (or use an existing clone if present).
+2. Run Phases 1-6 of the oss-to-saas skill in full: analysis, architecture design, code modifications, infrastructure, business layer, compliance.
+3. Write a standalone docker-compose.yaml in ${workdir} that can run the generated SaaS independently (reuses shared services where available: Postgres at db:5432, Redis at redis:6379).
+4. Write a README.md in ${workdir} documenting: detected stack, added multi-tenancy, auth strategy, billing wiring, how to deploy.
+5. Return a JSON summary as your final output including: project_name, stack, services_added, next_steps.`;
+    try {
+      const result = await client.post("/api/v1/ai/claude/run", {
+        prompt,
+        workdir,
+        timeout: 1800000,
+        max_turns: 50,
+      });
+      return jsonResult({
+        ...result,
+        project_name: slug,
+        output_dir: workdir,
+        message: "Conversion started. Poll fast_saas_convert_status(job_id) for progress.",
+      });
+    } catch (e: any) {
+      return jsonResult({ error: e.message });
+    }
+  }
+);
+
+server.tool(
+  "fast_saas_convert_status",
+  "Poll the status of an OSS-to-SaaS conversion job. Returns status (queued/running/done/failed/timeout), stdout, stderr, and exit_code.",
+  { job_id: z.string().describe("Job UUID from fast_saas_convert_to_saas") },
+  async ({ job_id }) => {
+    try {
+      const result = await client.get(`/api/v1/ai/claude/jobs/${job_id}`);
+      return jsonResult(result);
+    } catch (e: any) {
+      return jsonResult({ error: e.message });
+    }
+  }
+);
+
+// ═══════════════════════════════════════════════
 // AI TOOLS — SYSTEM (2)
 // ═══════════════════════════════════════════════
 

@@ -2,5 +2,6 @@ packages:
   - "packages/cli"
   - "packages/api"
   - "packages/mcp"
+  - "packages/claude-agent"
   - "packages/dashboard"
   - "packages/starter/middleware"
