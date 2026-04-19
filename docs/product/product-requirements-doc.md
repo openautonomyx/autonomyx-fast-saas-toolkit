@@ -1,77 +1,99 @@
 # Product Requirements Doc (PRD)
-## Product: Autonomyx Fast SaaS Toolkit
 
-## 1) Product Vision
-Autonomyx Fast SaaS Toolkit is the fastest path from idea to production SaaS: one guided setup flow, production-safe defaults, and optional advanced modules that can be enabled progressively.
+## Product
 
-**Core UX principle:** new users should reach a working SaaS in under 30 minutes with a single command path.
+**Name:** Autonomyx Fast SaaS Toolkit  
+**Version Target:** v1.0  
+**Positioning:** The fastest path for founders and engineering teams to launch a production-ready multi-tenant SaaS stack with optional AI and ops modules.
 
-## 2) Target Users
-- **Primary:** indie founders, product engineers, startup CTOs.
-- **Secondary:** agencies and internal platform teams shipping repeated SaaS patterns.
-- **Tertiary:** enterprises needing private deployment and support SLAs.
+## Problem Statement
 
-## 3) Problem Statement
-Current repo value is high, but the user journey is “toolkit-first” (many knobs, many modules). Commercial product needs “outcome-first” onboarding with opinionated defaults.
+Users can assemble infrastructure with the current toolkit, but they still face high onboarding complexity, unclear edition boundaries, and no polished commercial journey from discovery to deployment.
 
-## 4) Product Outcomes (v1)
-- Time-to-first-running-stack: **<= 30 minutes** on local Docker.
-- Time-to-first-production-deploy: **<= 1 day** on VPS/Coolify.
-- First-run setup success rate: **>= 85%**.
-- New user activation (completes onboarding + smoke test): **>= 60%**.
+## Target Users
 
-## 5) Scope
-### In Scope (v1)
-- Starter kit + hosted control plane architecture.
-- Packaging (Community / Pro / Enterprise).
-- Landing page and docs portal structure.
-- Guided onboarding wizard (CLI-first, dashboard-supported).
-- Environment schema validation + preflight + smoke tests.
-- Deployment hardening guides (local, VPS, Coolify, Docker).
-- Monetization hooks (license gating + support workflows).
+1. **Technical founder** launching MVP in <14 days.
+2. **Startup engineering team** replacing bespoke platform setup.
+3. **Agency / systems integrator** shipping repeatable SaaS builds for clients.
+4. **Enterprise innovation team** requiring self-host + support SLAs.
 
-### Out of Scope (v1)
-- Full Kubernetes operator (define migration path only).
-- Complex multi-region control plane.
-- Deep vendor-specific lock-in features.
+## Product Goals (v1)
 
-## 6) Product Surface
-- **Starter Kit:** self-hostable stack with modules and profiles.
-- **Hosted Control Plane:** licensing, updates, telemetry opt-in, billing/support portal.
-- **CLI:** bootstrap, doctor/preflight, env validation, deploy helpers.
-- **Admin Dashboard:** onboarding wizard, module management, health overview.
-- **Docs Site:** setup paths by persona, deployment recipes, troubleshooting.
+1. **Time-to-first-running-stack < 30 minutes** for new users.
+2. **Time-to-first-tenant < 60 minutes** including auth, billing, and health checks.
+3. **Single default path** that works without deep infra knowledge.
+4. **Commercial readiness** with CE/Pro/Enterprise packaging and entitlement hooks.
 
-## 7) Functional Requirements
-1. One-command bootstrap (`fast-saas bootstrap`) with opinionated defaults.
-2. Preflight checks before startup (Docker, ports, env, domain, memory).
-3. Strong env validation with clear actionable errors.
-4. Onboarding flow with module profile presets:
-   - `minimal` (essential+core)
-   - `standard` (+ops)
-   - `growth` (+growth)
-   - `ai` (+ai)
-5. Health dashboard summarizing critical service status and tenant readiness.
-6. Smoke test workflow validating API auth, tenant CRUD, billing hooks.
-7. Licensing gate for premium modules/features.
-8. Documentation path tailored to “first deployment in one day”.
+## Non-Goals (v1)
 
-## 8) Non-Functional Requirements
-- Secure defaults (no weak secrets, no default production creds).
-- Reproducible deployments.
-- Backwards-compatible upgrade path for CLI and compose assets.
-- Observability-by-default for core services.
+- Full Kubernetes operator.
+- Multi-region HA automation.
+- Marketplace-level plugin ecosystem.
 
-## 9) Success Metrics
-- Bootstrap completion rate.
-- Mean time to recover from setup failure.
-- Doc-to-activation conversion.
-- Paid conversion by edition.
+## Core Product Architecture (User-facing)
 
-## 10) Risks and Mitigations
-- **Risk:** too many optional modules overwhelm users.
-  - **Mitigation:** preset profiles + progressive disclosure.
-- **Risk:** self-hosting support burden.
-  - **Mitigation:** runbooks + hosted support tiers + enterprise onboarding package.
-- **Risk:** secret misconfiguration.
-  - **Mitigation:** stricter env schema and preflight blocking for unsafe values.
+1. **Starter Kit (self-hosted runtime)**
+2. **Hosted Control Plane (licensing, updates, support, telemetry)**
+3. **CLI (bootstrap + preflight + deploy)**
+4. **Admin Dashboard (operations + onboarding + health)**
+5. **Docs Site (task-driven, role-based journeys)**
+
+## Functional Requirements
+
+### FR1: First-run onboarding wizard
+- Must guide domain, secrets, module profile, and deployment target.
+- Must generate validated config before any deployment action.
+- Must produce a human-readable summary and next-step commands.
+
+### FR2: Environment validation
+- Must validate required env keys and secret strength.
+- Must verify domain DNS readiness.
+- Must verify local Docker health and minimum resource availability.
+
+### FR3: Opinionated module profiles
+- Provide default presets:
+  - **Launch Fast:** essential + core + ops
+  - **Growth Ready:** launch fast + growth essentials
+  - **AI Ready:** growth ready + AI observability baseline
+
+### FR4: Health dashboard
+- Central health status by service/group.
+- Actionable remediation links per failed check.
+- Include startup progress (bootstrapping step tracker).
+
+### FR5: Docs portal and guided journeys
+- “Start here” path by persona.
+- Copy-paste command blocks with expected output.
+- Troubleshooting decision trees.
+
+### FR6: Monetization hooks
+- Entitlement checks at module-enable time and API-use time.
+- Graceful downgrade/expired license handling.
+- Support entitlement badge and escalation workflow entry points.
+
+## Packaging Strategy Requirements
+
+### Community Edition
+- Core starter flow, local deployment, basic docs.
+- No hosted control plane automations.
+
+### Pro
+- Production preflight suite, advanced dashboards, deploy helpers, premium module unlocks.
+
+### Enterprise
+- SSO/SCIM, policy controls, audit logs, support SLA workflows, private onboarding support.
+
+## UX Requirements (Ruthless Simplicity)
+
+1. Default path must ask **at most 5 decisions** before first deploy.
+2. Every advanced option hidden behind “Advanced settings”.
+3. Never block on optional integrations for first success.
+4. Every error must include “what failed”, “why”, and “exact fix command”.
+
+## Success Metrics
+
+- Activation: % of users completing bootstrap + health pass.
+- Time-to-value: median time from `init` to first healthy stack.
+- Retention: % projects returning in 7/30 days.
+- Revenue: Pro conversion from CE within 30 days.
+

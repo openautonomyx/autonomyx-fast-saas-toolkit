@@ -1,34 +1,78 @@
 # Onboarding UX Copy
 
-## Step 1: Welcome
-**Title:** Let’s launch your SaaS foundation
-**Body:** We’ll configure a production-ready baseline in a few minutes. You can keep defaults and customize later.
-**CTA:** Continue
+## Principle
+Default path should be short, obvious, and safe. Advanced controls are available but never required for first success.
 
-## Step 2: Choose Your Path
-**Title:** Pick your starting profile
-- **Minimal (Recommended):** essential + core modules for fastest launch.
-- **Standard:** adds monitoring and reliability tooling.
-- **Growth:** adds marketing/automation modules.
-- **AI:** adds AI workflows and model tooling.
+## Welcome Screen
 
-## Step 3: Environment
-**Title:** Validate your environment
-**Body:** We check Docker, available ports, memory, and required variables before provisioning.
-**CTA:** Run Preflight
+**Title:** Welcome to Autonomyx Fast SaaS Toolkit  
+**Body:** Let’s get your production-ready SaaS stack running in about 30 minutes. We’ll guide domain setup, security, modules, and deployment.
 
-## Step 4: Secrets
-**Title:** Secure your stack
-**Body:** We generated secure defaults. Replace any flagged values before production deploy.
-**CTA:** Review Secrets
+**Primary button:** Start setup  
+**Secondary link:** I want advanced options
 
-## Step 5: Provision
-**Title:** Bootstrap services
-**Body:** We’ll initialize databases, start services, and run smoke tests.
-**CTA:** Bootstrap Now
+## Step 1: Project Basics
 
-## Step 6: Success
-**Title:** Your SaaS stack is live
-**Body:** Next, create a sample tenant, open the dashboard, and invite your team.
-**CTA 1:** Open Dashboard
-**CTA 2:** Run Sample Tenant Setup
+**Prompt:** What are you building?  
+- Project name
+- Admin email
+- Preferred deployment target (Local, VPS, Coolify)
+
+**Helper copy:** You can change these later from project settings.
+
+## Step 2: Module Profile
+
+**Title:** Choose your starting profile  
+- Launch Fast (Recommended)
+- Growth Ready
+- AI Ready
+
+**Helper copy:** Start with fewer modules for faster setup. You can add more anytime.
+
+## Step 3: Domain and Routing
+
+**Prompt:** Where should your services be reachable?  
+- Domain input
+- DNS check button
+
+**Error copy:** We couldn’t verify your DNS yet. Update records, then re-run check.
+
+## Step 4: Secrets and Security
+
+**Prompt:** Create secure service credentials  
+- Auto-generate secrets (default)
+- Bring your own secrets (advanced)
+
+**Confirmation copy:** All required secrets passed security validation.
+
+## Step 5: Preflight Check
+
+**Checklist items:**
+- Docker running
+- Required ports available
+- DNS ready
+- Env schema valid
+- Disk/memory minimums met
+
+**Success state:** Your environment is ready to deploy.  
+**Failure state:** We found issues. Fix them below, then retry.
+
+## Step 6: Deploy
+
+**Action:** Deploy now  
+**Progress copy:** Provisioning services in dependency order…
+
+## Final Success Screen
+
+**Title:** Your SaaS platform is live 🎉  
+**Body:** Next, create your first tenant, invite a teammate, and run your health dashboard.
+
+**Primary button:** Open dashboard  
+**Secondary button:** View quickstart docs
+
+## Empty States
+
+- **No tenants yet:** Create your first tenant to start onboarding customers.
+- **No billing configured:** Connect billing to enable subscriptions and usage-based plans.
+- **No alerts configured:** Enable at least one alert channel to monitor service health.
+

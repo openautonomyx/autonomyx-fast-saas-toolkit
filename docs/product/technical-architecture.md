@@ -1,50 +1,98 @@
-# Technical Architecture (Commercial Product)
+# Technical Architecture: Productized Autonomyx Fast SaaS Toolkit
 
-## 1) Architecture Overview
-Autonomyx Fast SaaS Toolkit should ship as a **productized platform** with five layers:
+## 1) System Components
 
-1. **Starter Kit Runtime** (self-hosted stack, Docker-first)
-2. **Hosted Control Plane** (licenses, updates, support, telemetry opt-in)
-3. **CLI** (bootstrap, validation, lifecycle, diagnostics)
-4. **Admin Dashboard** (tenant, modules, health, onboarding)
-5. **Docs + Website** (marketing + developer education)
+## A. Starter Runtime (customer-managed)
+- Docker Compose stack generated from profile + module selection.
+- Runtime APIs: SaaS API + optional AI/ops tools.
+- Local metadata file (`.fast-saas.json`) + validated env schema.
 
-## 2) Logical Components
-- **Data Plane (customer infra):** docker-compose services, Postgres/Redis, reverse proxy, modules.
-- **Control Plane (Autonomyx-hosted):** customer org accounts, license keys, feature entitlements, release channels, support ticketing.
-- **Developer UX Plane:** CLI + docs + guided flows.
+## B. Hosted Control Plane (Autonomyx-managed)
+- Tenant/org management for paid accounts.
+- License issuance and entitlement service.
+- Anonymous telemetry ingest + release notifications.
+- Support ticket intake and incident workflow orchestration.
 
-## 3) Starter Profiles
-- **minimal:** essential + core (default)
-- **standard:** minimal + ops
-- **growth:** standard + growth
-- **ai:** growth + ai
+## C. CLI
+- `init`: bootstrap project.
+- `onboard`: guided first-run flow (domain, secrets, profile).
+- `preflight`: environment and deploy readiness checks.
+- `deploy`: target-aware deployments (local/VPS/Coolify).
+- `doctor`: troubleshooting and self-healing recommendations.
 
-## 4) Control Plane APIs (v1)
-- `POST /v1/licenses/validate`
-- `GET /v1/entitlements/:orgId`
-- `GET /v1/releases/channel/:track`
-- `POST /v1/support/tickets`
-- `POST /v1/telemetry/events` (opt-in)
+## D. Dashboard
+- Onboarding checklist + setup progress.
+- Service/module health views.
+- Tenant and plan management.
+- Entitlement visibility.
 
-## 5) Security Model
-- Signed license tokens validated offline with periodic refresh.
-- Env schema blocks weak/default secrets for production mode.
-- Role-based admin dashboard (owner/admin/operator).
-- Separation between control plane credentials and runtime credentials.
+## E. Docs Portal
+- Versioned docs + role-based pathways.
+- Embedded architecture diagrams and scenario runbooks.
 
-## 6) Deployment Topologies
-- Local single-node Docker (developer default).
-- VPS single-node with hardened Caddy + backups.
-- Coolify app bundle path.
-- Future: Kubernetes Helm chart path from same module registry.
+## 2) Key Data Flows
 
-## 7) Observability
-- Required baseline: health checks + status summary.
-- Standard: Prometheus/Loki/Grafana dashboards.
-- Enterprise: audit event export + SIEM-friendly stream.
+### Flow A: First Run
+1. User runs `fast-saas init`.
+2. CLI writes scaffold + env template.
+3. User runs `fast-saas onboard`.
+4. Onboarding calls local validators.
+5. Optional control-plane handshake activates license.
+6. CLI writes final config, then runs deploy command.
 
-## 8) Upgrade Strategy
-- Versioned CLI templates.
-- Migration assistant for env and compose diffs.
-- Release channels: stable / candidate / nightly.
+### Flow B: Entitlement Enforcement
+1. Module enable request occurs in CLI or dashboard.
+2. Local policy evaluator checks offline cache.
+3. If online, control plane validates edition + entitlements.
+4. Allowed modules are enabled; blocked modules return upgrade CTA.
+
+### Flow C: Health and Trust
+1. Runtime publishes health snapshots.
+2. Dashboard reads health API and displays status + remediation.
+3. Optional telemetry posts anonymized diagnostics to control plane.
+
+## 3) Configuration and Safety Standards
+
+- Single source of truth: typed env schema package (e.g., Zod).
+- Production-safe defaults:
+  - No insecure local defaults when `DOMAIN != localhost`.
+  - Required non-placeholder secrets before deploy.
+  - Ports exposure minimized by default.
+- Domain mapping manifest:
+  - Stable mapping from module → subdomain.
+  - Collision detection.
+
+## 4) Deployment Model
+
+### Local
+- Full developer override support and readable logs.
+
+### VPS
+- Hardened compose mode (no dev overrides).
+- Preflight checks for DNS, ports, memory, storage.
+
+### Coolify
+- Generated environment bundle + service dependency deployment order.
+
+### Docker-first
+- Primary path for v1.
+
+### Kubernetes (future path)
+- Deliver Helm charts + values profile parity after v1 GA.
+
+## 5) Security and Compliance Baseline
+
+- Secrets never committed; generated at bootstrap with strength checks.
+- License tokens signed and short-lived for online verification.
+- Audit trail for entitlement changes and admin actions (Pro+).
+- CSP and secure cookie defaults for dashboard/control plane.
+
+## 6) Proposed Package Topology (v1)
+
+- `packages/config-schema`
+- `packages/licensing`
+- `packages/control-plane`
+- `packages/docs-portal`
+- `packages/web`
+- `packages/onboarding`
+
