@@ -1,4 +1,4 @@
-.PHONY: up down health logs ps setup seed backup clean
+.PHONY: up down health logs ps setup seed backup clean bootstrap preflight smoke
 
 # Load .env if it exists
 ifneq (,$(wildcard ./.env))
@@ -40,6 +40,16 @@ logs: ## Tail logs for all services
 
 logs-%: ## Tail logs for specific service (e.g., make logs-logto)
 	$(COMPOSE) logs -f --tail=100 $*
+
+
+preflight: ## Run environment and host readiness checks
+	@./scripts/preflight.sh
+
+bootstrap: ## One-command first-run setup (preflight + up + setup + smoke)
+	@./scripts/bootstrap.sh
+
+smoke: ## Run post-start smoke tests
+	@./scripts/smoke-test.sh
 
 ## ── Setup ─────────────────────────────────────
 

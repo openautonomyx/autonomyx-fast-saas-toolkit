@@ -32,9 +32,11 @@ cd my-saas && make up
 ```bash
 git clone https://github.com/openautonomyx/autonomyx-fast-saas-toolkit.git
 cd autonomyx-fast-saas-toolkit/packages/starter
-cp .env.example .env    # Edit with your domain + secrets
-make setup && make up
+cp .env.example .env
+make bootstrap
 ```
+
+> `make bootstrap` runs preflight checks, starts services, initializes databases, runs health checks, and executes smoke tests.
 
 ### Option C: Claude Code skill
 
@@ -299,3 +301,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 ## License
 
 MIT
+
+## Product Documentation (Commercial v1 Planning)
+
+- [Product Requirements Doc](docs/product/product-requirements-doc.md)
+- [Technical Architecture](docs/product/technical-architecture.md)
+- [Repo Gap Analysis](docs/product/repo-gap-analysis.md)
+- [Proposed Folder/Package Changes](docs/product/proposed-folder-package-changes.md)
+- [Prioritized Roadmap](docs/product/prioritized-roadmap.md)
+- [Pricing & Packaging Proposal](docs/product/pricing-and-packaging-proposal.md)
+- [Website Copy](docs/product/website-copy.md)
+- [Onboarding UX Copy](docs/product/onboarding-ux-copy.md)
+- [Release Checklist v1](docs/product/release-checklist-v1.md)

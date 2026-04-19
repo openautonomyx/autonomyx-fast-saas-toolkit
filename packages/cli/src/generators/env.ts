@@ -5,7 +5,7 @@
  */
 
 import type { ModuleDefinition } from "../modules/registry.js";
-import { generateSecret, generatePassword } from "../utils/secrets.js";
+import { generateSecret } from "../utils/secrets.js";
 
 export interface EnvConfig {
   domain: string;
@@ -73,6 +73,20 @@ export function parseEnvFile(content: string): Map<string, string> {
   return map;
 }
 
+
+function looksLikeEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function looksLikeDomain(value: string): boolean {
+  if (value === "localhost") return true;
+  return /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(value);
+}
+
+function isWeakSecret(value: string): boolean {
+  return value.length < 16 || /^(changeme|password|admin|123456)$/i.test(value);
+}
+
 /**
  * Validate that all required env vars are set and not placeholder values.
  */
@@ -88,16 +102,28 @@ export function validateEnv(
 
       if (v.required && (!value || value === "CHANGE_ME")) {
         issues.push({ key: v.key, module: mod.name, issue: "Missing or placeholder value" });
+        continue;
+      }
+
+      if (value && v.secret && isWeakSecret(value)) {
+        issues.push({ key: v.key, module: mod.name, issue: "Secret appears weak for production" });
       }
     }
   }
 
   // Check global required vars
-  for (const key of ["DOMAIN", "ADMIN_EMAIL"]) {
-    const value = envMap.get(key);
-    if (!value || value === "CHANGE_ME" || value === "example.com") {
-      issues.push({ key, module: "Global", issue: "Missing or placeholder value" });
-    }
+  const domain = envMap.get("DOMAIN");
+  if (!domain || domain === "CHANGE_ME" || domain === "example.com") {
+    issues.push({ key: "DOMAIN", module: "Global", issue: "Missing or placeholder value" });
+  } else if (!looksLikeDomain(domain)) {
+    issues.push({ key: "DOMAIN", module: "Global", issue: "Invalid domain format" });
+  }
+
+  const adminEmail = envMap.get("ADMIN_EMAIL");
+  if (!adminEmail || adminEmail === "CHANGE_ME") {
+    issues.push({ key: "ADMIN_EMAIL", module: "Global", issue: "Missing or placeholder value" });
+  } else if (!looksLikeEmail(adminEmail)) {
+    issues.push({ key: "ADMIN_EMAIL", module: "Global", issue: "Invalid email format" });
   }
 
   return issues;
