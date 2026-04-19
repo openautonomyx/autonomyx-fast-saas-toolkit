@@ -95,3 +95,15 @@ Then say: "scaffold a new SaaS project" or "configure billing plans" or "diagnos
 - [Module Guides](modules/) — Per-service setup and integration
 - [Deployment Guide](deployment.md) — Local → staging → production
 - [Security Guide](security.md) — Secrets, network isolation, OIDC
+
+
+## Productization Docs
+
+- [Repo Gap Analysis](product/repo-gap-analysis.md)
+- [Product Requirements Doc](product/product-requirements-doc.md)
+- [Technical Architecture](product/technical-architecture.md)
+- [Prioritized Roadmap](product/prioritized-roadmap.md)
+- [Pricing & Packaging Proposal](product/pricing-packaging-proposal.md)
+- [Website Copy](product/website-copy.md)
+- [Onboarding UX Copy](product/onboarding-ux-copy.md)
+- [v1 Release Checklist](product/release-checklist-v1.md)
